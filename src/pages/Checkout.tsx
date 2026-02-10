@@ -111,16 +111,17 @@ export default function Checkout() {
       const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
       if (itemsErr) throw itemsErr;
 
+      let proofPath = "";
       if (proofFile) {
         const ext = proofFile.name.split(".").pop();
-        const path = `${user.id}/${order.id}.${ext}`;
-        const { error: uploadErr } = await supabase.storage.from("payment-proofs").upload(path, proofFile);
+        proofPath = `${user.id}/${order.id}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from("payment-proofs").upload(proofPath, proofFile);
         if (uploadErr) throw uploadErr;
       }
 
       try {
         await supabase.functions.invoke("notify-order", {
-          body: { orderId: order.id, total, items: items.length, telegram: address },
+          body: { orderId: order.id, total, items: items.length, telegram: address, proofPath },
         });
       } catch { /* non-blocking */ }
 
