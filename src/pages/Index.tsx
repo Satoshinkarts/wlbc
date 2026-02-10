@@ -4,36 +4,43 @@ import { ShoppingBag, Shield, Zap } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 
 const PRODUCT_NAMES = [
-  "PVA - Gmail", "Outlook PVA", "Hotmail PVA", "GMX Accounts",
-  "Facebook Accounts", "FB Business Manager", "Twitter / X Accounts",
-  "Instagram Accounts", "Telegram Services", "TikTok Followers",
-  "ChatGPT GO", "Spotify Premium",
+  "📧 PVA Gmail Accounts",
+  "📧 Outlook PVA",
+  "📧 Hotmail PVA",
+  "📧 GMX Email Accounts",
+  "👤 Facebook Accounts",
+  "💼 FB Business Managers",
+  "🐦 Twitter / X Accounts",
+  "📸 Instagram Accounts",
+  "✈️ Telegram Services",
+  "🎵 TikTok Followers",
+  "🤖 ChatGPT GO Subscription",
+  "🎧 Spotify Premium",
 ];
 
 const DICE_FACES = [
-  { label: "Gmail", img: "https://ykoiozmlscyuizppduqk.supabase.co/storage/v1/object/public/product-images/1770762178566.png" },
-  { label: "Outlook", img: "/images/outlook-logo.jpg" },
-  { label: "Hotmail", img: "/images/hotmail-logo.jpg" },
-  { label: "Facebook", img: "/images/facebook-logo.jpg" },
-  { label: "Instagram", img: "/images/instagram-logo.jpg" },
-  { label: "Twitter / X", img: "/images/twitter-logo.jpg" },
-  { label: "GMX", img: "/images/gmx-logo.jpg" },
-  { label: "Telegram", img: "/images/telegram-logo.jpg" },
-  { label: "TikTok", img: "/images/tiktok-logo.jpg" },
-  { label: "Services", img: "/images/services-logo.jpg" },
+  { label: "Gmail PVA", desc: "Phone Verified Accounts", img: "https://ykoiozmlscyuizppduqk.supabase.co/storage/v1/object/public/product-images/1770762178566.png" },
+  { label: "Outlook PVA", desc: "Phone Verified Accounts", img: "/images/outlook-logo.jpg" },
+  { label: "Hotmail PVA", desc: "Phone Verified Accounts", img: "/images/hotmail-logo.jpg" },
+  { label: "Facebook", desc: "New & Business Manager", img: "/images/facebook-logo.jpg" },
+  { label: "Instagram", desc: "Old & New Accounts", img: "/images/instagram-logo.jpg" },
+  { label: "Twitter / X", desc: "Aged & Follower Accounts", img: "/images/twitter-logo.jpg" },
+  { label: "GMX Email", desc: "New & Aged Accounts", img: "/images/gmx-logo.jpg" },
+  { label: "Telegram", desc: "Numbers & Members", img: "/images/telegram-logo.jpg" },
+  { label: "TikTok", desc: "Followers Package", img: "/images/tiktok-logo.jpg" },
+  { label: "Services", desc: "Subscriptions & More", img: "/images/services-logo.jpg" },
 ];
 
 function MarqueeBanner() {
-  const text = PRODUCT_NAMES.join("  •  ") + "  •  ";
+  const items = [...PRODUCT_NAMES, ...PRODUCT_NAMES];
   return (
-    <div className="w-full overflow-hidden bg-primary/10 border-b border-primary/20 py-2">
-      <div className="marquee-track flex whitespace-nowrap">
-        <span className="marquee-content text-sm font-semibold text-primary tracking-wide">
-          {text}
-        </span>
-        <span className="marquee-content text-sm font-semibold text-primary tracking-wide" aria-hidden>
-          {text}
-        </span>
+    <div className="marquee-wrapper bg-primary/10 border-b border-primary/20 py-2.5">
+      <div className="marquee-track">
+        {items.map((name, i) => (
+          <span key={i} className="marquee-item text-sm font-semibold text-primary">
+            {name}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -58,9 +65,9 @@ function DiceRoller() {
   const face = DICE_FACES[currentIndex];
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-2">
       <div
-        className={`relative h-28 w-28 sm:h-36 sm:w-36 rounded-2xl border-2 border-primary/30 bg-card shadow-lg overflow-hidden transition-transform duration-500 ${
+        className={`relative h-32 w-32 sm:h-40 sm:w-40 rounded-2xl border-2 border-primary/30 bg-card shadow-[0_0_20px_hsl(var(--primary)/0.15)] overflow-hidden ${
           isRolling ? "animate-dice-roll" : ""
         }`}
       >
@@ -70,9 +77,10 @@ function DiceRoller() {
           className="h-full w-full object-cover"
         />
       </div>
-      <span className={`text-sm font-semibold text-primary transition-opacity duration-300 ${isRolling ? "opacity-0" : "opacity-100"}`}>
-        {face.label}
-      </span>
+      <div className={`text-center transition-opacity duration-300 ${isRolling ? "opacity-0" : "opacity-100"}`}>
+        <p className="text-base font-bold text-foreground">{face.label}</p>
+        <p className="text-xs text-muted-foreground">{face.desc}</p>
+      </div>
     </div>
   );
 }
