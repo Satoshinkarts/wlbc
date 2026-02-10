@@ -32,11 +32,17 @@ export default function Products() {
     fetchProducts();
   }, []);
 
-  const filtered = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = products
+    .filter(
+      (p) =>
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.category.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => {
+      const aFeatured = a.name.includes("PVA - Gmail") ? -1 : 0;
+      const bFeatured = b.name.includes("PVA - Gmail") ? -1 : 0;
+      return aFeatured - bFeatured;
+    });
 
   return (
     <div className="px-4 py-6">
