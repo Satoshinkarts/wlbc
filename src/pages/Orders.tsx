@@ -65,7 +65,7 @@ export default function Orders() {
                 <div className="flex justify-between items-end">
                   <div>
                     <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground truncate max-w-[200px]">{order.shipping_address}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground truncate max-w-[200px]">TG: {order.shipping_address}</p>
                   </div>
                   <p className="text-base font-bold text-primary">₱{Number(order.total).toFixed(2)}</p>
                 </div>

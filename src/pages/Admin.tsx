@@ -222,7 +222,7 @@ export default function Admin() {
                     <p className="font-mono text-sm text-muted-foreground">#{order.id.slice(0, 8)}</p>
                     <p className="font-bold text-primary">${Number(order.total).toFixed(2)}</p>
                     <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
-                    <p className="mt-1 text-sm text-muted-foreground truncate max-w-xs">{order.shipping_address}</p>
+                    <p className="mt-1 text-sm text-muted-foreground truncate max-w-xs">TG: {order.shipping_address}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <Select value={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
