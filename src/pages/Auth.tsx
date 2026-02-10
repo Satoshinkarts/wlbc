@@ -55,6 +55,9 @@ export default function Auth() {
           <p className="text-sm text-muted-foreground">
             {isLogin ? "Sign in to your account" : "Register to start shopping"}
           </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Contact us: <a href="https://t.me/nitmirr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">TG: @nitmirr</a>
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

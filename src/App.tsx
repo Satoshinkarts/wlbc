@@ -27,7 +27,7 @@ const App = () => (
           <BrowserRouter>
             <Navbar />
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Auth />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/products" element={<Products />} />
               <Route path="/cart" element={<Cart />} />
