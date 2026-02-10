@@ -1,12 +1,90 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Shield, Zap } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+
+const PRODUCT_NAMES = [
+  "PVA - Gmail", "Outlook PVA", "Hotmail PVA", "GMX Accounts",
+  "Facebook Accounts", "FB Business Manager", "Twitter / X Accounts",
+  "Instagram Accounts", "Telegram Services", "TikTok Followers",
+  "ChatGPT GO", "Spotify Premium",
+];
+
+const DICE_FACES = [
+  { label: "Gmail", img: "https://ykoiozmlscyuizppduqk.supabase.co/storage/v1/object/public/product-images/1770762178566.png" },
+  { label: "Outlook", img: "/images/outlook-logo.jpg" },
+  { label: "Hotmail", img: "/images/hotmail-logo.jpg" },
+  { label: "Facebook", img: "/images/facebook-logo.jpg" },
+  { label: "Instagram", img: "/images/instagram-logo.jpg" },
+  { label: "Twitter / X", img: "/images/twitter-logo.jpg" },
+  { label: "GMX", img: "/images/gmx-logo.jpg" },
+  { label: "Telegram", img: "/images/telegram-logo.jpg" },
+  { label: "TikTok", img: "/images/tiktok-logo.jpg" },
+  { label: "Services", img: "/images/services-logo.jpg" },
+];
+
+function MarqueeBanner() {
+  const text = PRODUCT_NAMES.join("  •  ") + "  •  ";
+  return (
+    <div className="w-full overflow-hidden bg-primary/10 border-b border-primary/20 py-2">
+      <div className="marquee-track flex whitespace-nowrap">
+        <span className="marquee-content text-sm font-semibold text-primary tracking-wide">
+          {text}
+        </span>
+        <span className="marquee-content text-sm font-semibold text-primary tracking-wide" aria-hidden>
+          {text}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DiceRoller() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isRolling, setIsRolling] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setIsRolling(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % DICE_FACES.length);
+        setIsRolling(false);
+      }, 600);
+    }, 3000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
+
+  const face = DICE_FACES[currentIndex];
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div
+        className={`relative h-28 w-28 sm:h-36 sm:w-36 rounded-2xl border-2 border-primary/30 bg-card shadow-lg overflow-hidden transition-transform duration-500 ${
+          isRolling ? "animate-dice-roll" : ""
+        }`}
+      >
+        <img
+          src={face.img}
+          alt={face.label}
+          className="h-full w-full object-cover"
+        />
+      </div>
+      <span className={`text-sm font-semibold text-primary transition-opacity duration-300 ${isRolling ? "opacity-0" : "opacity-100"}`}>
+        {face.label}
+      </span>
+    </div>
+  );
+}
 
 export default function Index() {
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
+      {/* Marquee */}
+      <MarqueeBanner />
+
       {/* Hero */}
-      <section className="flex flex-1 flex-col items-center justify-center px-4 py-20 text-center">
+      <section className="flex flex-1 flex-col items-center justify-center px-4 py-16 text-center">
         <div className="animate-fade-in space-y-6 max-w-2xl">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 glow-primary animate-pulse-glow">
             <ShoppingBag className="h-8 w-8 text-primary" />
@@ -17,6 +95,10 @@ export default function Index() {
           <p className="mx-auto max-w-lg text-lg text-muted-foreground">
             Browse products, place orders, and track deliveries — all in one sleek, fast experience.
           </p>
+
+          {/* Dice showcase */}
+          <DiceRoller />
+
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/products">
               <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 glow-sm px-8">
