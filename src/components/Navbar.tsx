@@ -25,7 +25,7 @@ export default function Navbar() {
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
         <Link to="/" onClick={closeMenu} className="flex items-center gap-2 text-lg font-bold tracking-tight text-foreground hover:text-primary transition-colors">
           <Package className="h-5 w-5 text-primary" />
-          <span>Store</span>
+          <span>WLBC Store</span>
         </Link>
 
         {/* Desktop nav */}
