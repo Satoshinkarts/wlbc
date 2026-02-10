@@ -43,7 +43,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
+    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-8">
       <Card className="w-full max-w-md bg-card border-border animate-fade-in">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 glow-sm">

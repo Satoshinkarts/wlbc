@@ -46,32 +46,28 @@ export default function Orders() {
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold text-foreground">My Orders</h1>
+    <div className="px-4 py-6">
+      <h1 className="mb-4 text-2xl font-bold text-foreground">My Orders</h1>
       {orders.length === 0 ? (
         <div className="py-20 text-center">
-          <Package className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-          <p className="text-muted-foreground">No orders yet.</p>
+          <Package className="mx-auto mb-4 h-14 w-14 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">No orders yet.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {orders.map((order) => (
             <Card key={order.id} className="bg-card border-border animate-fade-in">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-mono text-muted-foreground">
-                  #{order.id.slice(0, 8)}
-                </CardTitle>
-                <Badge className={statusColors[order.status] || "bg-secondary text-foreground"}>
-                  {order.status}
-                </Badge>
+              <CardHeader className="flex flex-row items-center justify-between pb-1 pt-3 px-4">
+                <CardTitle className="text-xs font-mono text-muted-foreground">#{order.id.slice(0, 8)}</CardTitle>
+                <Badge className={`text-[10px] ${statusColors[order.status] || "bg-secondary text-foreground"}`}>{order.status}</Badge>
               </CardHeader>
-              <CardContent>
-                <div className="flex justify-between">
+              <CardContent className="px-4 pb-3">
+                <div className="flex justify-between items-end">
                   <div>
-                    <p className="text-sm text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
-                    <p className="mt-1 text-sm text-muted-foreground truncate max-w-xs">{order.shipping_address}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground truncate max-w-[200px]">{order.shipping_address}</p>
                   </div>
-                  <p className="text-lg font-bold text-primary">${Number(order.total).toFixed(2)}</p>
+                  <p className="text-base font-bold text-primary">₱{Number(order.total).toFixed(2)}</p>
                 </div>
               </CardContent>
             </Card>

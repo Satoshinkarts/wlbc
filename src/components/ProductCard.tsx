@@ -21,10 +21,7 @@ export default function ProductCard({ id, name, description, price, image_url, s
   const navigate = useNavigate();
 
   const handleAdd = () => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
+    if (!user) { navigate("/auth"); return; }
     addItem({ id, name, price, image_url });
     toast.success(`${name} added to cart`);
   };
@@ -35,24 +32,17 @@ export default function ProductCard({ id, name, description, price, image_url, s
         {image_url ? (
           <img src={image_url} alt={name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-            No Image
-          </div>
+          <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">No Image</div>
         )}
       </div>
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-foreground truncate">{name}</h3>
-        <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{description}</p>
-        <div className="mt-3 flex items-center justify-between">
-          <span className="text-lg font-bold text-primary">${price.toFixed(2)}</span>
-          <Button
-            size="sm"
-            onClick={handleAdd}
-            disabled={stock <= 0}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 glow-sm"
-          >
-            <ShoppingCart className="mr-1 h-4 w-4" />
-            {stock <= 0 ? "Out of Stock" : "Add"}
+      <CardContent className="p-3">
+        <h3 className="text-sm font-semibold text-foreground truncate">{name}</h3>
+        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{description}</p>
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-sm font-bold text-primary">₱{price.toFixed(2)}</span>
+          <Button size="sm" onClick={handleAdd} disabled={stock <= 0} className="bg-primary text-primary-foreground hover:bg-primary/90 h-7 px-2 text-xs">
+            <ShoppingCart className="mr-1 h-3 w-3" />
+            {stock <= 0 ? "Out" : "Add"}
           </Button>
         </div>
       </CardContent>

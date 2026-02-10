@@ -1,15 +1,14 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, CheckCircle, AlertTriangle } from "lucide-react";
+import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +19,44 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import qrPaymentImage from "@/assets/qr-payment.jpg";
+
+const PAYMENT_TIMEOUT = 10 * 60; // 10 minutes in seconds
+
+function PaymentTimer({ onExpire }: { onExpire: () => void }) {
+  const [seconds, setSeconds] = useState(PAYMENT_TIMEOUT);
+
+  useEffect(() => {
+    if (seconds <= 0) { onExpire(); return; }
+    const t = setTimeout(() => setSeconds((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [seconds, onExpire]);
+
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  const pct = (seconds / PAYMENT_TIMEOUT) * 100;
+  const isLow = seconds < 120;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Clock className={`h-4 w-4 ${isLow ? "text-destructive animate-pulse" : "text-warning"}`} />
+          <span className={`text-sm font-semibold ${isLow ? "text-destructive" : "text-warning"}`}>
+            {mins}:{secs.toString().padStart(2, "0")}
+          </span>
+        </div>
+        <span className="text-xs text-muted-foreground">Payment window</span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-1000 ${isLow ? "bg-destructive" : "bg-warning"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function Checkout() {
   const { items, total, clearCart } = useCart();
@@ -31,31 +68,30 @@ export default function Checkout() {
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
-
-  if (items.length === 0) {
-    navigate("/cart");
-    return null;
-  }
+  const [expired, setExpired] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.size > 5 * 1024 * 1024) {
-      toast.error("File must be under 5MB");
-      return;
-    }
+    if (file && file.size > 5 * 1024 * 1024) { toast.error("File must be under 5MB"); return; }
     setProofFile(file || null);
   };
 
-  const placeOrder = async () => {
-    if (!address.trim()) {
-      toast.error("Please enter a shipping address");
-      return;
-    }
+  const handleExpire = useCallback(() => {
+    setExpired(true);
+    toast.error("Payment window expired. Please try again.");
+  }, []);
+
+  useEffect(() => {
+    if (!user) navigate("/auth");
+    else if (items.length === 0) navigate("/cart");
+  }, [user, items, navigate]);
+
+  if (!user || items.length === 0) return null;
+
+  const placeOrder = () => {
+    if (!address.trim()) { toast.error("Please enter a shipping address"); return; }
+    if (!proofFile) { toast.error("Payment proof is required. Please upload your proof of payment."); return; }
+    if (expired) { toast.error("Payment window expired. Please refresh and try again."); return; }
     setShowConfirm(true);
   };
 
@@ -63,7 +99,6 @@ export default function Checkout() {
     setShowConfirm(false);
     setLoading(true);
     try {
-      // Create order
       const { data: order, error: orderErr } = await supabase
         .from("orders")
         .insert({ user_id: user.id, total, shipping_address: address, notes, status: "pending" })
@@ -71,34 +106,22 @@ export default function Checkout() {
         .single();
       if (orderErr) throw orderErr;
 
-      // Create order items
-      const orderItems = items.map((i) => ({
-        order_id: order.id,
-        product_id: i.id,
-        quantity: i.quantity,
-        price: i.price,
-      }));
+      const orderItems = items.map((i) => ({ order_id: order.id, product_id: i.id, quantity: i.quantity, price: i.price }));
       const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
       if (itemsErr) throw itemsErr;
 
-      // Upload payment proof
       if (proofFile) {
         const ext = proofFile.name.split(".").pop();
         const path = `${user.id}/${order.id}.${ext}`;
-        const { error: uploadErr } = await supabase.storage
-          .from("payment-proofs")
-          .upload(path, proofFile);
+        const { error: uploadErr } = await supabase.storage.from("payment-proofs").upload(path, proofFile);
         if (uploadErr) throw uploadErr;
       }
 
-      // Trigger email notification via edge function
       try {
         await supabase.functions.invoke("notify-order", {
           body: { orderId: order.id, total, items: items.length },
         });
-      } catch {
-        // Non-blocking
-      }
+      } catch { /* non-blocking */ }
 
       clearCart();
       toast.success("Order placed successfully!");
@@ -111,100 +134,136 @@ export default function Checkout() {
   };
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold text-foreground">Checkout</h1>
+    <div className="mx-auto max-w-lg px-4 py-6">
+      <h1 className="mb-4 text-2xl font-bold text-foreground">Checkout</h1>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
+        {/* Timer */}
+        <Card className="bg-card border-border">
+          <CardContent className="pt-4 pb-3">
+            <PaymentTimer onExpire={handleExpire} />
+          </CardContent>
+        </Card>
+
         {/* Order Summary */}
         <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">Order Summary</CardTitle>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm font-semibold text-foreground">Order Summary</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-1.5 px-4 pb-4">
             {items.map((item) => (
               <div key={item.id} className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{item.name} × {item.quantity}</span>
-                <span className="text-foreground">${(item.price * item.quantity).toFixed(2)}</span>
+                <span className="text-muted-foreground truncate mr-2">{item.name} × {item.quantity}</span>
+                <span className="text-foreground shrink-0">₱{(item.price * item.quantity).toFixed(2)}</span>
               </div>
             ))}
             <div className="border-t border-border pt-2">
               <div className="flex justify-between font-bold text-foreground">
                 <span>Total</span>
-                <span className="text-primary">${total.toFixed(2)}</span>
+                <span className="text-primary">₱{total.toFixed(2)}</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* QR Payment */}
+        <Card className="bg-card border-border">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <QrCode className="h-4 w-4 text-primary" />
+              Scan to Pay (QR PH)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center px-4 pb-4">
+            <div className="w-48 h-48 rounded-xl overflow-hidden bg-white p-2 mb-3">
+              <img src={qrPaymentImage} alt="QR Payment Code" className="w-full h-full object-contain" />
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Scan the QR code using your preferred e-wallet or banking app, then upload your proof below.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Payment Proof - REQUIRED */}
+        <Card className={`bg-card border-border ${!proofFile ? "border-warning/50" : "border-success/50"}`}>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+              Upload Payment Proof
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">Required</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div
+              onClick={() => fileRef.current?.click()}
+              className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 border-dashed p-4 transition-colors ${
+                proofFile ? "border-success/50 bg-success/5" : "border-border bg-secondary hover:border-primary/50"
+              }`}
+            >
+              <Upload className={`h-5 w-5 ${proofFile ? "text-success" : "text-muted-foreground"}`} />
+              <span className={`text-sm ${proofFile ? "text-success" : "text-muted-foreground"}`}>
+                {proofFile ? proofFile.name : "Tap to upload payment screenshot"}
+              </span>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileChange} />
+            <p className="mt-2 text-[11px] text-muted-foreground">Max 5MB · JPG, PNG, PDF</p>
+          </CardContent>
+        </Card>
+
         {/* Shipping */}
         <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">Shipping Address</CardTitle>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm font-semibold text-foreground">Shipping Address</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 pb-4">
             <Textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Enter your full shipping address..."
               required
-              className="bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+              rows={3}
+              className="bg-secondary border-border text-foreground placeholder:text-muted-foreground text-sm"
             />
-          </CardContent>
-        </Card>
-
-        {/* Payment Proof */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">Payment Proof</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-3 text-sm text-muted-foreground">Upload a screenshot or photo of your payment (optional, max 5MB)</p>
-            <div
-              onClick={() => fileRef.current?.click()}
-              className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border bg-secondary p-4 transition-colors hover:border-primary/50"
-            >
-              <Upload className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                {proofFile ? proofFile.name : "Click to upload payment proof"}
-              </span>
-            </div>
-            <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileChange} />
           </CardContent>
         </Card>
 
         {/* Notes */}
         <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">Order Notes (Optional)</CardTitle>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm font-semibold text-foreground">Notes (Optional)</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 pb-4">
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any special instructions..."
-              className="bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+              rows={2}
+              className="bg-secondary border-border text-foreground placeholder:text-muted-foreground text-sm"
             />
           </CardContent>
         </Card>
 
-        <Button onClick={placeOrder} disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 glow-sm py-6 text-lg">
+        <Button
+          onClick={placeOrder}
+          disabled={loading || expired}
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 glow-sm py-5 text-base"
+        >
           {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
-          Place Order — ${total.toFixed(2)}
+          {expired ? "Payment Expired" : `Place Order — ₱${total.toFixed(2)}`}
         </Button>
       </div>
 
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent className="bg-card border-border">
+        <AlertDialogContent className="bg-card border-border mx-4 max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+            <AlertDialogTitle className="flex items-center gap-2 text-foreground text-base">
               <AlertTriangle className="h-5 w-5 text-warning" />
               Confirm Your Order
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              This action is final. Your order of <strong className="text-foreground">${total.toFixed(2)}</strong> will be submitted for processing. Are you sure?
+            <AlertDialogDescription className="text-muted-foreground text-sm">
+              Your order of <strong className="text-foreground">₱{total.toFixed(2)}</strong> will be submitted for processing. Are you sure?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
             <AlertDialogCancel className="border-border text-foreground hover:bg-secondary">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmOrder} className="bg-primary text-primary-foreground hover:bg-primary/90">
               Yes, Place Order

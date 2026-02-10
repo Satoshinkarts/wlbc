@@ -39,13 +39,13 @@ export default function Products() {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Products</h1>
-        <p className="mt-1 text-muted-foreground">Browse our collection</p>
+    <div className="px-4 py-6">
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold text-foreground">Products</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">Browse our collection</p>
       </div>
 
-      <div className="relative mb-8 max-w-md">
+      <div className="relative mb-5">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={search}
@@ -60,11 +60,11 @@ export default function Products() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="py-20 text-center text-muted-foreground">
+        <div className="py-20 text-center text-muted-foreground text-sm">
           {products.length === 0 ? "No products available yet." : "No products match your search."}
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {filtered.map((product) => (
             <ProductCard key={product.id} {...product} />
           ))}
