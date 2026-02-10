@@ -50,6 +50,13 @@ export default function Index() {
           ))}
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border px-4 py-6 text-center">
+        <p className="text-xs text-muted-foreground">
+          Need help? Contact us on Telegram: <a href="https://t.me/nitmirr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">@nitmirr</a>
+        </p>
+      </footer>
     </div>
   );
 }
