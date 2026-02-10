@@ -136,6 +136,8 @@ export type Database = {
           full_name: string
           id: string
           phone: string | null
+          referral_code: string | null
+          referred_by: string | null
           updated_at: string
           user_id: string
         }
@@ -146,6 +148,8 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string
           user_id: string
         }
@@ -156,8 +160,34 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          credited: boolean
+          id: string
+          referred_user_id: string
+          referrer_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credited?: boolean
+          id?: string
+          referred_user_id: string
+          referrer_user_id: string
+        }
+        Update: {
+          created_at?: string
+          credited?: boolean
+          id?: string
+          referred_user_id?: string
+          referrer_user_id?: string
         }
         Relationships: []
       }

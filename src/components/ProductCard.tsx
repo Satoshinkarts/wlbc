@@ -1,4 +1,4 @@
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Infinity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCart } from "@/contexts/CartContext";
@@ -20,6 +20,9 @@ export default function ProductCard({ id, name, description, price, image_url, s
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const isInfinite = stock === -1;
+  const inStock = isInfinite || stock > 0;
+
   const handleAdd = () => {
     if (!user) { navigate("/auth"); return; }
     addItem({ id, name, price, image_url });
@@ -39,10 +42,17 @@ export default function ProductCard({ id, name, description, price, image_url, s
         <h3 className="text-sm font-semibold text-foreground truncate">{name}</h3>
         <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{description}</p>
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-sm font-bold text-primary">₱{price.toFixed(2)}</span>
-          <Button size="sm" onClick={handleAdd} disabled={stock <= 0} className="bg-primary text-primary-foreground hover:bg-primary/90 h-7 px-2 text-xs">
+          <div>
+            <span className="text-sm font-bold text-primary">₱{price.toFixed(2)}</span>
+            {isInfinite && (
+              <span className="ml-1.5 inline-flex items-center text-[10px] text-success">
+                <Infinity className="h-3 w-3 mr-0.5" />In Stock
+              </span>
+            )}
+          </div>
+          <Button size="sm" onClick={handleAdd} disabled={!inStock} className="bg-primary text-primary-foreground hover:bg-primary/90 h-7 px-2 text-xs">
             <ShoppingCart className="mr-1 h-3 w-3" />
-            {stock <= 0 ? "Out" : "Add"}
+            {inStock ? "Add" : "Out"}
           </Button>
         </div>
       </CardContent>

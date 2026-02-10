@@ -124,7 +124,20 @@ function ProductForm({
       </div>
       <div className="space-y-1.5">
         <Label className="text-foreground text-sm">Stock</Label>
-        <Input type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="bg-secondary border-border text-foreground text-sm" />
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            value={stock === "-1" ? "" : stock}
+            onChange={(e) => setStock(e.target.value)}
+            disabled={stock === "-1"}
+            placeholder={stock === "-1" ? "∞ Infinite" : "0"}
+            className="bg-secondary border-border text-foreground text-sm"
+          />
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Switch checked={stock === "-1"} onCheckedChange={(checked) => setStock(checked ? "-1" : "0")} />
+            <span className="text-[11px] text-muted-foreground whitespace-nowrap">Infinite</span>
+          </div>
+        </div>
       </div>
       <div className="space-y-1.5 sm:col-span-2">
         <Label className="text-foreground text-sm">Description</Label>
@@ -353,7 +366,7 @@ export default function Admin() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">₱{Number(p.price).toFixed(2)} · Stock: {p.stock} {!p.is_active && <span className="text-destructive">· Hidden</span>}</p>
+                    <p className="text-xs text-muted-foreground">₱{Number(p.price).toFixed(2)} · Stock: {p.stock === -1 ? "∞" : p.stock} {!p.is_active && <span className="text-destructive">· Hidden</span>}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
