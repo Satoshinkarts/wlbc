@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Package, Loader2, Info } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -110,14 +110,16 @@ export default function Auth() {
                   <div className="flex items-center gap-1.5">
                     <Label htmlFor="referral" className="text-foreground">Referral Code</Label>
                     <span className="text-[10px] text-muted-foreground">(optional)</span>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-card border-border text-foreground max-w-[200px]">
-                        <p className="text-xs">Got a code from a friend? Enter it here. They'll earn rPoints when you make your first purchase!</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-card border-border text-foreground max-w-[200px]">
+                          <p className="text-xs">Got a code from a friend? Enter it here. They'll earn rPoints when you make your first purchase!</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <Input
                     id="referral"
