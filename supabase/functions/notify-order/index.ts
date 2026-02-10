@@ -14,14 +14,14 @@ serve(async (req) => {
   try {
     const { orderId, total, items, telegram } = await req.json();
 
-    console.log(`📦 NEW ORDER: ${orderId} | $${total} | ${items} items | TG: ${telegram}`);
+    console.log(`📦 NEW ORDER: ${orderId} | ₱${total} | ${items} items | TG: ${telegram}`);
 
     // Send to Telegram
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const chatId = Deno.env.get("TELEGRAM_CHAT_ID");
 
     if (botToken && chatId) {
-      const message = `🛒 *New Order!*\n\n📦 Order: \`${orderId?.slice(0, 8)}\`\n💰 Total: *$${total}*\n📋 Items: ${items}\n📱 Telegram: ${telegram || "N/A"}\n\nCheck admin dashboard to manage.`;
+      const message = `🛒 *New Order\\!*\n\n📦 Order: \`${orderId?.slice(0, 8)}\`\n💰 Total: *₱${total}*\n📋 Items: ${items}\n📱 Deliver to: ${telegram || "N/A"}\n\nCheck admin dashboard to manage\\.`;
 
       const tgRes = await fetch(
         `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -31,7 +31,7 @@ serve(async (req) => {
           body: JSON.stringify({
             chat_id: chatId,
             text: message,
-            parse_mode: "Markdown",
+            parse_mode: "MarkdownV2",
           }),
         }
       );
@@ -39,6 +39,22 @@ serve(async (req) => {
       if (!tgRes.ok) {
         const errText = await tgRes.text();
         console.error("Telegram error:", errText);
+        
+        // Fallback to plain text if MarkdownV2 fails
+        const plainMessage = `🛒 New Order!\n\n📦 Order: ${orderId?.slice(0, 8)}\n💰 Total: ₱${total}\n📋 Items: ${items}\n📱 Deliver to: ${telegram || "N/A"}\n\nCheck admin dashboard to manage.`;
+        
+        await fetch(
+          `https://api.telegram.org/bot${botToken}/sendMessage`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: plainMessage,
+            }),
+          }
+        );
+        console.log("Telegram notification sent (plain text fallback)");
       } else {
         console.log("Telegram notification sent");
       }
@@ -60,15 +76,13 @@ serve(async (req) => {
         body: JSON.stringify({
           from: "Store <onboarding@resend.dev>",
           to: [notifyEmail],
-          subject: `New Order #${orderId?.slice(0, 8)} — $${total}`,
-          html: `<h2>New Order Received!</h2><p><strong>Order ID:</strong> ${orderId}</p><p><strong>Total:</strong> $${total}</p><p><strong>Items:</strong> ${items}</p>`,
+          subject: `New Order #${orderId?.slice(0, 8)} — ₱${total}`,
+          html: `<h2>New Order Received!</h2><p><strong>Order ID:</strong> ${orderId}</p><p><strong>Total:</strong> ₱${total}</p><p><strong>Items:</strong> ${items}</p><p><strong>Deliver to:</strong> ${telegram}</p>`,
         }),
       });
 
       if (!emailRes.ok) {
         console.error("Resend error:", await emailRes.text());
-      } else {
-        console.log("Email sent successfully");
       }
     }
 

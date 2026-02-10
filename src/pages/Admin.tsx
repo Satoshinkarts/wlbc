@@ -220,7 +220,7 @@ export default function Admin() {
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <p className="font-mono text-sm text-muted-foreground">#{order.id.slice(0, 8)}</p>
-                    <p className="font-bold text-primary">${Number(order.total).toFixed(2)}</p>
+                    <p className="font-bold text-primary">₱{Number(order.total).toFixed(2)}</p>
                     <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
                     <p className="mt-1 text-sm text-muted-foreground truncate max-w-xs">TG: {order.shipping_address}</p>
                   </div>
