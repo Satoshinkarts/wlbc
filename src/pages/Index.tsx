@@ -90,7 +90,7 @@ export default function Index() {
             <ShoppingBag className="h-8 w-8 text-primary" />
           </div>
           <h1 className="text-5xl font-extrabold tracking-tight text-foreground sm:text-6xl">
-            Your Digital Store
+            WLBC Store
           </h1>
           <p className="mx-auto max-w-lg text-lg text-muted-foreground">
             Browse products, place orders, and track deliveries — all in one sleek, fast experience.
