@@ -120,7 +120,7 @@ export default function Checkout() {
 
       try {
         await supabase.functions.invoke("notify-order", {
-          body: { orderId: order.id, total, items: items.length },
+          body: { orderId: order.id, total, items: items.length, telegram: address },
         });
       } catch { /* non-blocking */ }
 
