@@ -234,7 +234,7 @@ export default function Checkout() {
               required
               className="bg-secondary border-border text-foreground placeholder:text-muted-foreground text-sm"
             />
-            <p className="mt-1.5 text-[11px] text-muted-foreground">We'll deliver your digital goods via Telegram</p>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">We'll deliver your digital goods via Telegram. For support, contact <a href="https://t.me/nitmirr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">@nitmirr</a></p>
           </CardContent>
         </Card>
 
