@@ -9,76 +9,65 @@ export default function Cart() {
 
   if (items.length === 0) {
     return (
-      <div className="container mx-auto flex flex-col items-center justify-center px-4 py-20">
-        <ShoppingBag className="mb-4 h-16 w-16 text-muted-foreground" />
-        <h2 className="text-2xl font-bold text-foreground">Your cart is empty</h2>
-        <p className="mt-2 text-muted-foreground">Browse our products and add items to your cart.</p>
+      <div className="flex flex-col items-center justify-center px-4 py-20">
+        <ShoppingBag className="mb-4 h-14 w-14 text-muted-foreground" />
+        <h2 className="text-xl font-bold text-foreground">Your cart is empty</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Browse our products and add items.</p>
         <Link to="/products">
-          <Button className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90">
-            Browse Products
-          </Button>
+          <Button className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90">Browse Products</Button>
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold text-foreground">Shopping Cart</h1>
+    <div className="mx-auto max-w-lg px-4 py-6">
+      <h1 className="mb-4 text-2xl font-bold text-foreground">Cart</h1>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
-          {items.map((item) => (
-            <Card key={item.id} className="flex items-center gap-4 bg-card border-border p-4 animate-fade-in">
-              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-secondary">
-                {item.image_url ? (
-                  <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">No Img</div>
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-foreground">{item.name}</h3>
-                <p className="text-sm text-primary">${item.price.toFixed(2)}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" className="h-8 w-8 border-border" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+      <div className="space-y-3">
+        {items.map((item) => (
+          <Card key={item.id} className="flex items-center gap-3 bg-card border-border p-3 animate-fade-in">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-secondary">
+              {item.image_url ? (
+                <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">No Img</div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold text-foreground truncate">{item.name}</h3>
+              <p className="text-xs text-primary">₱{item.price.toFixed(2)}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Button variant="outline" size="icon" className="h-6 w-6 border-border" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
                   <Minus className="h-3 w-3" />
                 </Button>
-                <span className="w-8 text-center text-foreground">{item.quantity}</span>
-                <Button variant="outline" size="icon" className="h-8 w-8 border-border" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                <span className="w-6 text-center text-sm text-foreground">{item.quantity}</span>
+                <Button variant="outline" size="icon" className="h-6 w-6 border-border" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
-              <p className="w-20 text-right font-semibold text-foreground">${(item.price * item.quantity).toFixed(2)}</p>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => removeItem(item.id)}>
-                <Trash2 className="h-4 w-4" />
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-semibold text-foreground">₱{(item.price * item.quantity).toFixed(2)}</p>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive mt-1" onClick={() => removeItem(item.id)}>
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
-            </Card>
-          ))}
-        </div>
-
-        <Card className="h-fit bg-card border-border p-6">
-          <h3 className="text-lg font-semibold text-foreground">Order Summary</h3>
-          <div className="mt-4 space-y-2">
-            <div className="flex justify-between text-muted-foreground">
-              <span>Subtotal</span>
-              <span>${total.toFixed(2)}</span>
             </div>
-            <div className="border-t border-border pt-2">
-              <div className="flex justify-between text-lg font-bold text-foreground">
-                <span>Total</span>
-                <span>${total.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-          <Link to="/checkout">
-            <Button className="mt-6 w-full bg-primary text-primary-foreground hover:bg-primary/90 glow-sm">
-              Proceed to Checkout
-            </Button>
-          </Link>
-        </Card>
+          </Card>
+        ))}
       </div>
+
+      <Card className="mt-4 bg-card border-border p-4">
+        <div className="flex justify-between text-lg font-bold text-foreground">
+          <span>Total</span>
+          <span className="text-primary">₱{total.toFixed(2)}</span>
+        </div>
+        <Link to="/checkout">
+          <Button className="mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90 glow-sm py-5">
+            Proceed to Checkout
+          </Button>
+        </Link>
+      </Card>
     </div>
   );
 }
