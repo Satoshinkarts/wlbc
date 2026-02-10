@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Package, Users, Info, Copy, CheckCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 interface Order {
@@ -71,14 +71,16 @@ export default function Orders() {
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-foreground">Referral Program</span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-card border-border text-foreground max-w-[220px]">
-                    <p className="text-xs">Share your code with friends. You earn 1 rPoint when they make their first purchase!</p>
-                  </TooltipContent>
-                </Tooltip>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-card border-border text-foreground max-w-[220px]">
+                      <p className="text-xs">Share your code with friends. You earn 1 rPoint when they make their first purchase!</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
                 {rPoints} rPoints
