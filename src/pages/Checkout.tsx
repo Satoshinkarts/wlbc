@@ -121,7 +121,14 @@ export default function Checkout() {
 
       try {
         await supabase.functions.invoke("notify-order", {
-          body: { orderId: order.id, total, items: items.length, telegram: address, proofPath },
+          body: {
+            orderId: order.id,
+            total,
+            items: items.length,
+            telegram: address,
+            proofPath,
+            itemDetails: items.map((i) => ({ name: i.name, quantity: i.quantity })),
+          },
         });
       } catch { /* non-blocking */ }
 
