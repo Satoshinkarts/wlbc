@@ -221,6 +221,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_and_create_order: {
+        Args: { _items: Json; _notes?: string; _shipping_address?: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "user"
