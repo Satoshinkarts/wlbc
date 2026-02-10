@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,13 +14,39 @@ serve(async (req) => {
   try {
     const { orderId, total, items } = await req.json();
 
-    // Log the order notification (email integration can be added later with Resend)
-    console.log(`📦 NEW ORDER NOTIFICATION`);
-    console.log(`Order ID: ${orderId}`);
-    console.log(`Total: $${total}`);
-    console.log(`Items: ${items}`);
+    console.log(`📦 NEW ORDER: ${orderId} | $${total} | ${items} items`);
 
-    // If RESEND_API_KEY is configured, send email
+    // Send to Telegram
+    const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    const chatId = Deno.env.get("TELEGRAM_CHAT_ID");
+
+    if (botToken && chatId) {
+      const message = `🛒 *New Order!*\n\n📦 Order: \`${orderId?.slice(0, 8)}\`\n💰 Total: *$${total}*\n📋 Items: ${items}\n\nCheck admin dashboard to manage.`;
+
+      const tgRes = await fetch(
+        `https://api.telegram.org/bot${botToken}/sendMessage`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message,
+            parse_mode: "Markdown",
+          }),
+        }
+      );
+
+      if (!tgRes.ok) {
+        const errText = await tgRes.text();
+        console.error("Telegram error:", errText);
+      } else {
+        console.log("Telegram notification sent");
+      }
+    } else {
+      console.log("Telegram not configured - set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID");
+    }
+
+    // Optional: Resend email
     const resendKey = Deno.env.get("RESEND_API_KEY");
     const notifyEmail = Deno.env.get("ADMIN_EMAIL");
 
@@ -36,24 +61,15 @@ serve(async (req) => {
           from: "Store <onboarding@resend.dev>",
           to: [notifyEmail],
           subject: `New Order #${orderId?.slice(0, 8)} — $${total}`,
-          html: `
-            <h2>New Order Received!</h2>
-            <p><strong>Order ID:</strong> ${orderId}</p>
-            <p><strong>Total:</strong> $${total}</p>
-            <p><strong>Items:</strong> ${items}</p>
-            <p>Log in to admin dashboard to manage this order.</p>
-          `,
+          html: `<h2>New Order Received!</h2><p><strong>Order ID:</strong> ${orderId}</p><p><strong>Total:</strong> $${total}</p><p><strong>Items:</strong> ${items}</p>`,
         }),
       });
 
       if (!emailRes.ok) {
-        const errText = await emailRes.text();
-        console.error("Resend error:", errText);
+        console.error("Resend error:", await emailRes.text());
       } else {
         console.log("Email sent successfully");
       }
-    } else {
-      console.log("Email not configured - set RESEND_API_KEY and ADMIN_EMAIL secrets to enable");
     }
 
     return new Response(JSON.stringify({ success: true }), {
