@@ -12,16 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, total, items } = await req.json();
+    const { orderId, total, items, telegram } = await req.json();
 
-    console.log(`📦 NEW ORDER: ${orderId} | $${total} | ${items} items`);
+    console.log(`📦 NEW ORDER: ${orderId} | $${total} | ${items} items | TG: ${telegram}`);
 
     // Send to Telegram
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const chatId = Deno.env.get("TELEGRAM_CHAT_ID");
 
     if (botToken && chatId) {
-      const message = `🛒 *New Order!*\n\n📦 Order: \`${orderId?.slice(0, 8)}\`\n💰 Total: *$${total}*\n📋 Items: ${items}\n\nCheck admin dashboard to manage.`;
+      const message = `🛒 *New Order!*\n\n📦 Order: \`${orderId?.slice(0, 8)}\`\n💰 Total: *$${total}*\n📋 Items: ${items}\n📱 Telegram: ${telegram || "N/A"}\n\nCheck admin dashboard to manage.`;
 
       const tgRes = await fetch(
         `https://api.telegram.org/bot${botToken}/sendMessage`,
