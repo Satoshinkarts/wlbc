@@ -86,10 +86,10 @@ export default function Auth() {
             {isLogin ? "Welcome Back" : "Create Account"}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {isLogin ? "Sign in to your account" : "Register to start shopping"}
+            {isLogin ? "Sign in to continue shopping" : "Join thousands of satisfied customers"}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Contact us: <a href="https://t.me/nitmirr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">TG: @nitmirr</a>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Support: <a href="https://t.me/nitmirr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">TG @nitmirr</a>
           </p>
         </CardHeader>
         <CardContent>
