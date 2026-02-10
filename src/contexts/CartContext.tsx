@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
+import { getDiscountedTotal } from "@/lib/pricing";
 
 export interface CartItem {
   id: string;
@@ -15,6 +16,9 @@ interface CartContextType {
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   total: number;
+  subtotal: number;
+  discount: number;
+  discountPct: number;
   itemCount: number;
 }
 
@@ -42,11 +46,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => setItems([]);
 
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+  const rawSubtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const { subtotal, discount, discountPct, total } = getDiscountedTotal(
+    items.length > 0 ? items[0].price : 0,
+    itemCount
+  );
+
+  // Use raw subtotal if multiple products with different prices
+  const finalSubtotal = rawSubtotal;
+  const finalDiscount = finalSubtotal * discountPct;
+  const finalTotal = finalSubtotal - finalDiscount;
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total, itemCount }}>
+    <CartContext.Provider value={{
+      items, addItem, removeItem, updateQuantity, clearCart,
+      total: finalTotal,
+      subtotal: finalSubtotal,
+      discount: finalDiscount,
+      discountPct,
+      itemCount,
+    }}>
       {children}
     </CartContext.Provider>
   );

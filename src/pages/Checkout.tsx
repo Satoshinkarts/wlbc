@@ -60,7 +60,7 @@ function PaymentTimer({ onExpire }: { onExpire: () => void }) {
 }
 
 export default function Checkout() {
-  const { items, total, clearCart } = useCart();
+  const { items, total, subtotal, discount, discountPct, clearCart, itemCount } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -158,7 +158,17 @@ export default function Checkout() {
                 <span className="text-foreground shrink-0">₱{(item.price * item.quantity).toFixed(2)}</span>
               </div>
             ))}
-            <div className="border-t border-border pt-2">
+            <div className="border-t border-border pt-2 space-y-1">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Subtotal ({itemCount} units)</span>
+                <span>₱{subtotal.toFixed(2)}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-sm text-success">
+                  <span>Discount ({(discountPct * 100).toFixed(0)}% off)</span>
+                  <span>-₱{discount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-foreground">
                 <span>Total</span>
                 <span className="text-primary">₱{total.toFixed(2)}</span>

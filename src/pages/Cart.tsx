@@ -1,11 +1,12 @@
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, Tag } from "lucide-react";
 import { Link } from "react-router-dom";
+import { PRICING_TIERS } from "@/lib/pricing";
 
 export default function Cart() {
-  const { items, removeItem, updateQuantity, total } = useCart();
+  const { items, removeItem, updateQuantity, total, subtotal, discount, discountPct, itemCount } = useCart();
 
   if (items.length === 0) {
     return (
@@ -36,7 +37,7 @@ export default function Cart() {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-semibold text-foreground truncate">{item.name}</h3>
-              <p className="text-xs text-primary">₱{item.price.toFixed(2)}</p>
+              <p className="text-xs text-primary">₱{item.price.toFixed(2)}/unit</p>
               <div className="flex items-center gap-2 mt-1">
                 <Button variant="outline" size="icon" className="h-6 w-6 border-border" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
                   <Minus className="h-3 w-3" />
@@ -57,10 +58,46 @@ export default function Cart() {
         ))}
       </div>
 
+      {/* Volume discount info */}
       <Card className="mt-4 bg-card border-border p-4">
-        <div className="flex justify-between text-lg font-bold text-foreground">
-          <span>Total</span>
-          <span className="text-primary">₱{total.toFixed(2)}</span>
+        <div className="flex items-center gap-2 mb-2">
+          <Tag className="h-4 w-4 text-primary" />
+          <span className="text-sm font-semibold text-foreground">Volume Pricing</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1">
+          {PRICING_TIERS.slice().reverse().map((tier) => (
+            <span
+              key={tier.minQty}
+              className={`text-[11px] px-2 py-1 rounded ${
+                itemCount >= tier.minQty && discountPct === tier.discount
+                  ? "bg-primary/20 text-primary font-semibold"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {tier.label}
+            </span>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="mt-3 bg-card border-border p-4">
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-sm text-muted-foreground">
+            <span>Subtotal ({itemCount} units)</span>
+            <span>₱{subtotal.toFixed(2)}</span>
+          </div>
+          {discount > 0 && (
+            <div className="flex justify-between text-sm text-success">
+              <span>Discount ({(discountPct * 100).toFixed(0)}% off)</span>
+              <span>-₱{discount.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="border-t border-border pt-2">
+            <div className="flex justify-between text-lg font-bold text-foreground">
+              <span>Total</span>
+              <span className="text-primary">₱{total.toFixed(2)}</span>
+            </div>
+          </div>
         </div>
         <Link to="/checkout">
           <Button className="mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90 glow-sm py-5">
