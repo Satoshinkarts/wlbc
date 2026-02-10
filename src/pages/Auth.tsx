@@ -5,14 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Package, Loader2 } from "lucide-react";
+import { Package, Loader2, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -31,7 +34,37 @@ export default function Auth() {
           setLoading(false);
           return;
         }
+
+        // Validate referral code if provided
+        let referrerUserId: string | null = null;
+        if (referralCode.trim()) {
+          const { data: referrer } = await supabase
+            .from("profiles")
+            .select("user_id")
+            .eq("referral_code", referralCode.trim().toUpperCase())
+            .maybeSingle();
+          if (!referrer) {
+            toast.error("Invalid referral code");
+            setLoading(false);
+            return;
+          }
+          referrerUserId = referrer.user_id;
+        }
+
         await signUp(email, password, fullName);
+
+        // If referral code was valid, create referral record after signup
+        if (referrerUserId) {
+          // We need the new user's ID - get it from session
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            await supabase.from("referrals").insert({
+              referrer_user_id: referrerUserId,
+              referred_user_id: session.user.id,
+            });
+          }
+        }
+
         toast.success("Account created! You can now sign in.");
         navigate("/products");
       }
@@ -62,16 +95,39 @@ export default function Auth() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-foreground">Full Name</Label>
-                <Input
-                  id="name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="John Doe"
-                  className="bg-secondary border-border text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-foreground">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="John Doe"
+                    className="bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="referral" className="text-foreground">Referral Code</Label>
+                    <span className="text-[10px] text-muted-foreground">(optional)</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-card border-border text-foreground max-w-[200px]">
+                        <p className="text-xs">Got a code from a friend? Enter it here. They'll earn rPoints when you make your first purchase!</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="referral"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value)}
+                    placeholder="e.g. A1B2C3D4"
+                    className="bg-secondary border-border text-foreground placeholder:text-muted-foreground uppercase"
+                  />
+                </div>
+              </>
             )}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-foreground">Email</Label>

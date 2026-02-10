@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, User, LogOut, Shield, Package, Menu, X } from "lucide-react";
+import { ShoppingCart, User, LogOut, Shield, Package, Menu, X, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -33,6 +33,11 @@ export default function Navbar() {
           <Link to="/products">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm">
               Products
+            </Button>
+          </Link>
+          <Link to="/faq">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-sm">
+              <HelpCircle className="mr-1 h-4 w-4" />FAQ
             </Button>
           </Link>
           {user ? (
@@ -90,6 +95,9 @@ export default function Navbar() {
       {menuOpen && (
         <div className="sm:hidden border-t border-border bg-card/95 backdrop-blur-xl px-4 py-3 space-y-1 animate-fade-in">
           <Link to="/products" onClick={closeMenu} className="block rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-secondary">Products</Link>
+          <Link to="/faq" onClick={closeMenu} className="block rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-secondary">
+            <span className="flex items-center gap-2"><HelpCircle className="h-4 w-4 text-primary" />FAQ</span>
+          </Link>
           {user ? (
             <>
               <Link to="/orders" onClick={closeMenu} className="block rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-secondary">My Orders</Link>
