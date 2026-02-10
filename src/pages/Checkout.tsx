@@ -100,21 +100,18 @@ export default function Checkout() {
     setShowConfirm(false);
     setLoading(true);
     try {
-      const { data: order, error: orderErr } = await supabase
-        .from("orders")
-        .insert({ user_id: user.id, total, shipping_address: address, notes, status: "pending" })
-        .select()
-        .single();
+      // Server-side validated order creation
+      const { data: orderId, error: orderErr } = await supabase.rpc("validate_and_create_order", {
+        _items: items.map((i) => ({ product_id: i.id, quantity: i.quantity })),
+        _shipping_address: address,
+        _notes: notes,
+      });
       if (orderErr) throw orderErr;
-
-      const orderItems = items.map((i) => ({ order_id: order.id, product_id: i.id, quantity: i.quantity, price: i.price }));
-      const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
-      if (itemsErr) throw itemsErr;
 
       let proofPath = "";
       if (proofFile) {
         const ext = proofFile.name.split(".").pop();
-        proofPath = `${user.id}/${order.id}.${ext}`;
+        proofPath = `${user.id}/${orderId}.${ext}`;
         const { error: uploadErr } = await supabase.storage.from("payment-proofs").upload(proofPath, proofFile);
         if (uploadErr) throw uploadErr;
       }
@@ -122,7 +119,7 @@ export default function Checkout() {
       try {
         await supabase.functions.invoke("notify-order", {
           body: {
-            orderId: order.id,
+            orderId,
             total,
             items: items.length,
             telegram: address,
