@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,54 +13,74 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, total, items, telegram } = await req.json();
+    const { orderId, total, items, telegram, proofPath } = await req.json();
 
     console.log(`📦 NEW ORDER: ${orderId} | ₱${total} | ${items} items | TG: ${telegram}`);
 
-    // Send to Telegram
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const chatId = Deno.env.get("TELEGRAM_CHAT_ID");
 
     if (botToken && chatId) {
-      const message = `🛒 *New Order\\!*\n\n📦 Order: \`${orderId?.slice(0, 8)}\`\n💰 Total: *₱${total}*\n📋 Items: ${items}\n📱 Deliver to: ${telegram || "N/A"}\n\nCheck admin dashboard to manage\\.`;
+      const caption = `🛒 New Order!\n\n📦 Order: ${orderId?.slice(0, 8)}\n💰 Total: ₱${total}\n📋 Items: ${items}\n📱 Deliver to: ${telegram || "N/A"}\n\nCheck admin dashboard to manage.`;
 
-      const tgRes = await fetch(
-        `https://api.telegram.org/bot${botToken}/sendMessage`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: message,
-            parse_mode: "MarkdownV2",
-          }),
+      let sent = false;
+
+      // If proof image exists, download and send as photo
+      if (proofPath) {
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const supabase = createClient(supabaseUrl, supabaseKey);
+
+          const { data: fileData, error: dlErr } = await supabase.storage
+            .from("payment-proofs")
+            .download(proofPath);
+
+          if (!dlErr && fileData) {
+            const formData = new FormData();
+            formData.append("chat_id", chatId);
+            formData.append("caption", caption);
+            formData.append("photo", fileData, proofPath.split("/").pop() || "proof.jpg");
+
+            const tgRes = await fetch(
+              `https://api.telegram.org/bot${botToken}/sendPhoto`,
+              { method: "POST", body: formData }
+            );
+
+            if (tgRes.ok) {
+              console.log("Telegram photo notification sent");
+              sent = true;
+            } else {
+              const errText = await tgRes.text();
+              console.error("Telegram sendPhoto error:", errText);
+            }
+          } else {
+            console.error("Failed to download proof:", dlErr?.message);
+          }
+        } catch (e) {
+          console.error("Error downloading/sending proof:", e.message);
         }
-      );
+      }
 
-      if (!tgRes.ok) {
-        const errText = await tgRes.text();
-        console.error("Telegram error:", errText);
-        
-        // Fallback to plain text if MarkdownV2 fails
-        const plainMessage = `🛒 New Order!\n\n📦 Order: ${orderId?.slice(0, 8)}\n💰 Total: ₱${total}\n📋 Items: ${items}\n📱 Deliver to: ${telegram || "N/A"}\n\nCheck admin dashboard to manage.`;
-        
-        await fetch(
+      // Fallback to text message if photo wasn't sent
+      if (!sent) {
+        const tgRes = await fetch(
           `https://api.telegram.org/bot${botToken}/sendMessage`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: plainMessage,
-            }),
+            body: JSON.stringify({ chat_id: chatId, text: caption }),
           }
         );
-        console.log("Telegram notification sent (plain text fallback)");
-      } else {
-        console.log("Telegram notification sent");
+
+        if (!tgRes.ok) {
+          console.error("Telegram error:", await tgRes.text());
+        } else {
+          console.log("Telegram text notification sent");
+        }
       }
     } else {
-      console.log("Telegram not configured - set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID");
+      console.log("Telegram not configured");
     }
 
     // Optional: Resend email
