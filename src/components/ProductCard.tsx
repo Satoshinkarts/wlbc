@@ -29,9 +29,16 @@ export default function ProductCard({ id, name, description, price, image_url, s
     toast.success(`${name} added to cart`);
   };
 
+  const isFeatured = name.includes("PVA - Gmail");
+
   return (
-    <Card className="group overflow-hidden bg-card border-border hover:border-primary/30 transition-all duration-300 animate-fade-in">
-      <div className="aspect-square overflow-hidden bg-secondary">
+    <Card className={`group overflow-hidden bg-card border-border hover:border-primary/30 transition-all duration-300 animate-fade-in ${isFeatured ? "ring-2 ring-primary/50 border-primary/40 shadow-[0_0_15px_hsl(var(--primary)/0.2)]" : ""}`}>
+      <div className="relative aspect-square overflow-hidden bg-secondary">
+        {isFeatured && (
+          <span className="absolute top-1.5 left-1.5 z-10 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md">
+            🔥 Best Seller
+          </span>
+        )}
         {image_url ? (
           <img src={image_url} alt={name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
