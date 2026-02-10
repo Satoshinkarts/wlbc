@@ -4,6 +4,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,7 +90,7 @@ export default function Checkout() {
   if (!user || items.length === 0) return null;
 
   const placeOrder = () => {
-    if (!address.trim()) { toast.error("Please enter a shipping address"); return; }
+    if (!address.trim()) { toast.error("Please enter your Telegram username"); return; }
     if (!proofFile) { toast.error("Payment proof is required. Please upload your proof of payment."); return; }
     if (expired) { toast.error("Payment window expired. Please refresh and try again."); return; }
     setShowConfirm(true);
@@ -209,20 +210,20 @@ export default function Checkout() {
           </CardContent>
         </Card>
 
-        {/* Shipping */}
+        {/* Telegram Username */}
         <Card className="bg-card border-border">
           <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-sm font-semibold text-foreground">Shipping Address</CardTitle>
+            <CardTitle className="text-sm font-semibold text-foreground">Telegram Username</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <Textarea
+            <Input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Enter your full shipping address..."
+              placeholder="@yourusername"
               required
-              rows={3}
               className="bg-secondary border-border text-foreground placeholder:text-muted-foreground text-sm"
             />
+            <p className="mt-1.5 text-[11px] text-muted-foreground">We'll deliver your digital goods via Telegram</p>
           </CardContent>
         </Card>
 
