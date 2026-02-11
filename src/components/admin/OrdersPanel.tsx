@@ -18,6 +18,7 @@ import {
   Minus, Download, StickyNote, ArchiveX, AlertTriangle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -42,6 +43,7 @@ interface Profile {
   user_id: string;
   full_name: string;
   email: string;
+  is_vip: boolean;
 }
 
 interface OrdersPanelProps {
@@ -398,7 +400,7 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
                     {order.admin_notes && <StickyNote className="h-3 w-3 text-warning" />}
                   </div>
                   <p
-                    className="text-[11px] text-primary/80 hover:underline cursor-pointer"
+                    className="text-[11px] text-primary/80 hover:underline cursor-pointer flex items-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation();
                       const prof = getProfile(order.user_id);
@@ -406,6 +408,9 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
                     }}
                   >
                     {getProfileName(order.user_id)}
+                    {getProfile(order.user_id)?.is_vip && (
+                      <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[8px] px-1 py-0">👑 VIP</Badge>
+                    )}
                   </p>
                   <p className="text-sm font-bold text-primary">₱{Number(order.total).toFixed(2)}</p>
                   {Number(order.remit) > 0 && (
@@ -634,6 +639,24 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
                 <div><p className="text-muted-foreground">Email</p><p className="text-foreground">{customerModal.email}</p></div>
                 <div><p className="text-muted-foreground">User ID</p><p className="text-foreground font-mono text-[10px]">{customerModal.user_id}</p></div>
               </div>
+              {/* VIP Toggle */}
+              <div className="border-t border-border pt-3 flex items-center justify-between">
+                <Label className="text-xs text-foreground flex items-center gap-1.5">
+                  👑 VIP Status
+                </Label>
+                <Switch
+                  checked={customerModal.is_vip}
+                  onCheckedChange={async (checked) => {
+                    const { error } = await supabase.from("profiles").update({ is_vip: checked }).eq("user_id", customerModal.user_id);
+                    if (error) { toast.error(error.message); return; }
+                    setCustomerModal({ ...customerModal, is_vip: checked });
+                    toast.success(checked ? "VIP status granted!" : "VIP status removed");
+                  }}
+                />
+              </div>
+              {customerModal.is_vip && (
+                <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]">👑 VIP Customer</Badge>
+              )}
               <div className="border-t border-border pt-3 space-y-2">
                 <Label className="text-xs text-foreground flex items-center gap-1.5">
                   <KeyRound className="h-3 w-3 text-primary" /> Reset Password
