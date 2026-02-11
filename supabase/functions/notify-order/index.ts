@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,7 +40,31 @@ serve(async (req) => {
 
     const userId = claimsData.claims.sub;
 
-    const { orderId, total, items, telegram, proofPath, itemDetails } = await req.json();
+    const ItemDetailSchema = z.object({
+      name: z.string().max(200),
+      quantity: z.number().int().positive().max(10000),
+    });
+
+    const RequestSchema = z.object({
+      orderId: z.string().uuid(),
+      total: z.number().positive().max(10000000),
+      items: z.number().int().positive().max(10000),
+      telegram: z.string().min(1).max(100).regex(/^@?[a-zA-Z0-9_]+$/),
+      proofPath: z.string().max(500).optional(),
+      itemDetails: z.array(ItemDetailSchema).max(100).optional(),
+    });
+
+    let validated;
+    try {
+      validated = RequestSchema.parse(await req.json());
+    } catch (validationError) {
+      return new Response(JSON.stringify({ error: "Invalid input" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const { orderId, total, items, telegram, proofPath, itemDetails } = validated;
 
     // Verify order belongs to the authenticated user
     const { data: order, error: orderErr } = await supabase
