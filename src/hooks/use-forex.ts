@@ -6,53 +6,61 @@ const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 interface CachedRate {
   rate: number;
   timestamp: number;
+  apiUpdated: string; // ISO date string from API
 }
 
-function getCachedRate(): number | null {
+function getCached(): CachedRate | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const cached: CachedRate = JSON.parse(raw);
-    if (Date.now() - cached.timestamp < CACHE_TTL) return cached.rate;
+    if (Date.now() - cached.timestamp < CACHE_TTL) return cached;
   } catch {}
   return null;
 }
 
-function setCachedRate(rate: number) {
-  localStorage.setItem(CACHE_KEY, JSON.stringify({ rate, timestamp: Date.now() }));
+function setCache(rate: number, apiUpdated: string) {
+  const entry: CachedRate = { rate, timestamp: Date.now(), apiUpdated };
+  localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
 }
 
-let fetchPromise: Promise<number> | null = null;
+let fetchPromise: Promise<CachedRate> | null = null;
 
-async function fetchLiveRate(): Promise<number> {
+async function fetchLiveRate(): Promise<CachedRate> {
   const res = await fetch("https://open.er-api.com/v6/latest/PHP");
   if (!res.ok) throw new Error("Forex API error");
   const data = await res.json();
   const rate = data.rates?.USD as number;
   if (!rate) throw new Error("USD rate not found");
-  setCachedRate(rate);
-  return rate;
+  const apiUpdated = data.time_last_update_utc || new Date().toISOString();
+  setCache(rate, apiUpdated);
+  return { rate, timestamp: Date.now(), apiUpdated };
 }
 
 export function usePhpToUsd() {
-  const [rate, setRate] = useState<number | null>(getCachedRate);
-  const [loading, setLoading] = useState(!rate);
+  const cached = getCached();
+  const [rate, setRate] = useState<number | null>(cached?.rate ?? null);
+  const [apiUpdated, setApiUpdated] = useState<string | null>(cached?.apiUpdated ?? null);
+  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
-    if (rate) return; // already have cached rate
+    if (rate) return;
     if (!fetchPromise) {
       fetchPromise = fetchLiveRate().finally(() => { fetchPromise = null; });
     }
     fetchPromise
-      .then((r) => setRate(r))
+      .then((r) => {
+        setRate(r.rate);
+        setApiUpdated(r.apiUpdated);
+      })
       .catch(() => {
-        // Fallback rate if API fails
         setRate(1 / 56);
+        setApiUpdated(null);
       })
       .finally(() => setLoading(false));
   }, [rate]);
 
   const convert = (php: number) => (rate ? php * rate : php / 56);
 
-  return { convert, rate, loading };
+  return { convert, rate, loading, apiUpdated };
 }

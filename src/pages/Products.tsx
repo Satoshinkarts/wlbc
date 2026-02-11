@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import ProductCard from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, RefreshCw } from "lucide-react";
+import { usePhpToUsd } from "@/hooks/use-forex";
 
 interface Product {
   id: string;
@@ -18,6 +19,7 @@ export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const { rate, apiUpdated, loading: forexLoading } = usePhpToUsd();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -49,6 +51,17 @@ export default function Products() {
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-foreground">Products</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">Browse our collection</p>
+        {rate && (
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <RefreshCw className="h-3 w-3" />
+            <span>
+              1 PHP = ${rate.toFixed(4)} USD
+              {apiUpdated && (
+                <> · Updated {new Date(apiUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</>
+              )}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="relative mb-5">
