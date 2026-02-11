@@ -5,10 +5,11 @@ import { Minus, Plus, Trash2, ShoppingBag, Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PRICING_TIERS } from "@/lib/pricing";
 import { usePhpToUsd } from "@/hooks/use-forex";
+import { RefreshCw } from "lucide-react";
 
 export default function Cart() {
   const { items, removeItem, updateQuantity, total, subtotal, discount, discountPct, itemCount } = useCart();
-  const { convert } = usePhpToUsd();
+  const { convert, rate, apiUpdated } = usePhpToUsd();
 
   if (items.length === 0) {
     return (
@@ -26,6 +27,17 @@ export default function Cart() {
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
       <h1 className="mb-4 text-2xl font-bold text-foreground">Cart</h1>
+      {rate && (
+        <div className="mb-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <RefreshCw className="h-3 w-3" />
+          <span>
+            1 PHP = ${rate.toFixed(4)} USD
+            {apiUpdated && (
+              <> · Updated {new Date(apiUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</>
+            )}
+          </span>
+        </div>
+      )}
 
       <div className="space-y-3">
         {items.map((item) => (
