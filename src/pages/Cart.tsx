@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Minus, Plus, Trash2, ShoppingBag, Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PRICING_TIERS } from "@/lib/pricing";
+import { phpToUsd } from "@/lib/currency";
 
 export default function Cart() {
   const { items, removeItem, updateQuantity, total, subtotal, discount, discountPct, itemCount } = useCart();
@@ -37,7 +38,7 @@ export default function Cart() {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-semibold text-foreground truncate">{item.name}</h3>
-              <p className="text-xs text-primary">₱{item.price.toFixed(2)}/unit</p>
+              <p className="text-xs text-primary">₱{item.price.toFixed(2)}/unit <span className="text-muted-foreground">(~${phpToUsd(item.price).toFixed(2)})</span></p>
               <div className="flex items-center gap-2 mt-1">
                 <Button variant="outline" size="icon" className="h-6 w-6 border-border" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
                   <Minus className="h-3 w-3" />
@@ -59,6 +60,7 @@ export default function Cart() {
             </div>
             <div className="text-right">
               <p className="text-sm font-semibold text-foreground">₱{(item.price * item.quantity).toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">(~${phpToUsd(item.price * item.quantity).toFixed(2)})</p>
               <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive mt-1" onClick={() => removeItem(item.id)}>
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -93,18 +95,18 @@ export default function Cart() {
         <div className="space-y-1.5">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Subtotal ({itemCount} units)</span>
-            <span>₱{subtotal.toFixed(2)}</span>
+            <span>₱{subtotal.toFixed(2)} (~${phpToUsd(subtotal).toFixed(2)})</span>
           </div>
           {discount > 0 && (
             <div className="flex justify-between text-sm text-success">
               <span>Discount ({(discountPct * 100).toFixed(0)}% off)</span>
-              <span>-₱{discount.toFixed(2)}</span>
+              <span>-₱{discount.toFixed(2)} (~-${phpToUsd(discount).toFixed(2)})</span>
             </div>
           )}
           <div className="border-t border-border pt-2">
             <div className="flex justify-between text-lg font-bold text-foreground">
               <span>Total</span>
-              <span className="text-primary">₱{total.toFixed(2)}</span>
+              <span className="text-primary">₱{total.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">(~${phpToUsd(total).toFixed(2)})</span></span>
             </div>
           </div>
         </div>
