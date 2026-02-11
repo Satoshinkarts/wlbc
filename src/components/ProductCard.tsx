@@ -1,5 +1,5 @@
 import { ShoppingCart, Infinity } from "lucide-react";
-import { phpToUsd } from "@/lib/currency";
+import { usePhpToUsd } from "@/hooks/use-forex";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCart } from "@/contexts/CartContext";
@@ -20,6 +20,7 @@ export default function ProductCard({ id, name, description, price, image_url, s
   const { addItem } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { convert } = usePhpToUsd();
 
   const isInfinite = stock === -1;
   const inStock = isInfinite || stock > 0;
@@ -52,7 +53,7 @@ export default function ProductCard({ id, name, description, price, image_url, s
         <div className="mt-2 flex items-center justify-between">
           <div>
             <span className="text-sm font-bold text-primary">₱{price.toFixed(2)}</span>
-            <span className="block text-[10px] text-muted-foreground">(~${phpToUsd(price).toFixed(2)})</span>
+            <span className="block text-[10px] text-muted-foreground">(~${convert(price).toFixed(2)})</span>
             {isInfinite && (
               <span className="ml-1.5 inline-flex items-center text-[10px] text-success">
                 <Infinity className="h-3 w-3 mr-0.5" />In Stock
