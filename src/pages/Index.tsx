@@ -7,6 +7,7 @@ import TrustSection from "@/components/home/TrustSection";
 import SocialProofSection from "@/components/home/SocialProofSection";
 import PricingShowcase from "@/components/home/PricingShowcase";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
+import TestimonialsSection from "@/components/home/TestimonialsSection";
 import FooterSection from "@/components/home/FooterSection";
 
 export default function Index() {
@@ -38,6 +39,10 @@ export default function Index() {
 
       {/* Social Proof */}
       <SocialProofSection />
+
+      {/* Testimonials */}
+      <TestimonialsSection />
+
 
       {/* Footer */}
       <FooterSection />
