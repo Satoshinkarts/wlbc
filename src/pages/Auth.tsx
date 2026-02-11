@@ -161,14 +161,19 @@ export default function Auth() {
               {isLogin ? "Sign In" : "Create Account"}
             </Button>
           </form>
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center space-y-2">
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-primary hover:underline"
+              className="text-sm text-primary hover:underline block mx-auto"
             >
               {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
             </button>
+            {isLogin && (
+              <a href="/forgot-password" className="text-sm text-muted-foreground hover:text-primary block">
+                Forgot Password?
+              </a>
+            )}
           </div>
         </CardContent>
       </Card>

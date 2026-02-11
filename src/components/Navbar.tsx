@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, User, LogOut, Shield, Package, Menu, X, HelpCircle } from "lucide-react";
+import { ShoppingCart, User, LogOut, Shield, Package, Menu, X, HelpCircle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -52,6 +52,11 @@ export default function Navbar() {
                   </Button>
                 </Link>
               )}
+              <Link to="/settings">
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </Link>
               <Link to="/cart" className="relative">
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8">
                   <ShoppingCart className="h-5 w-5" />
@@ -101,6 +106,9 @@ export default function Navbar() {
           {user ? (
             <>
               <Link to="/orders" onClick={closeMenu} className="block rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-secondary">My Orders</Link>
+              <Link to="/settings" onClick={closeMenu} className="block rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-secondary">
+                <span className="flex items-center gap-2"><Settings className="h-4 w-4 text-primary" />Settings</span>
+              </Link>
               {isAdmin && (
                 <Link to="/admin" onClick={closeMenu} className="block rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-secondary">
                   <span className="flex items-center gap-2"><Shield className="h-4 w-4 text-primary" />Admin</span>

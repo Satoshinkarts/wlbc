@@ -98,6 +98,63 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      password_reset_tokens: {
+        Row: {
+          attempts: number
+          created_at: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+          token_hash: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          token_hash: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          token_hash?: string
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string | null
@@ -147,6 +204,7 @@ export type Database = {
           phone: string | null
           referral_code: string | null
           referred_by: string | null
+          telegram_chat_id: string | null
           updated_at: string
           user_id: string
         }
@@ -159,6 +217,7 @@ export type Database = {
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          telegram_chat_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -171,6 +230,7 @@ export type Database = {
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          telegram_chat_id?: string | null
           updated_at?: string
           user_id?: string
         }
