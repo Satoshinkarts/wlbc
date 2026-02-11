@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { phpToUsd } from "@/lib/currency";
 import qrPaymentImage from "@/assets/qr-payment.jpg";
 import qrCryptoImage from "@/assets/qr-crypto-usdt.jpg";
 
@@ -221,23 +222,23 @@ export default function Checkout() {
             {items.map((item) => (
               <div key={item.id} className="flex justify-between text-sm">
                 <span className="text-muted-foreground truncate mr-2">{item.name} × {item.quantity}</span>
-                <span className="text-foreground shrink-0">₱{(item.price * item.quantity).toFixed(2)}</span>
+                <span className="text-foreground shrink-0">₱{(item.price * item.quantity).toFixed(2)} <span className="text-muted-foreground">(~${phpToUsd(item.price * item.quantity).toFixed(2)})</span></span>
               </div>
             ))}
             <div className="border-t border-border pt-2 space-y-1">
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Subtotal ({itemCount} units)</span>
-                <span>₱{subtotal.toFixed(2)}</span>
+                <span>₱{subtotal.toFixed(2)} (~${phpToUsd(subtotal).toFixed(2)})</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-sm text-success">
                   <span>Discount ({(discountPct * 100).toFixed(0)}% off)</span>
-                  <span>-₱{discount.toFixed(2)}</span>
+                  <span>-₱{discount.toFixed(2)} (~-${phpToUsd(discount).toFixed(2)})</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-foreground">
                 <span>Total</span>
-                <span className="text-primary">₱{total.toFixed(2)}</span>
+                <span className="text-primary">₱{total.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">(~${phpToUsd(total).toFixed(2)})</span></span>
               </div>
             </div>
           </CardContent>
@@ -333,7 +334,7 @@ export default function Checkout() {
           className="w-full bg-primary text-primary-foreground hover:bg-primary/90 glow-sm py-5 text-base"
         >
           {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
-          {expired ? "Payment Expired" : `Place Order — ₱${total.toFixed(2)}`}
+          {expired ? "Payment Expired" : `Place Order — ₱${total.toFixed(2)} (~$${phpToUsd(total).toFixed(2)})`}
         </Button>
       </div>
 
@@ -345,7 +346,7 @@ export default function Checkout() {
               Confirm Your Order
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground text-sm">
-              Your order of <strong className="text-foreground">₱{total.toFixed(2)}</strong> will be submitted for processing. Are you sure?
+              Your order of <strong className="text-foreground">₱{total.toFixed(2)} (~${phpToUsd(total).toFixed(2)})</strong> will be submitted for processing. Are you sure?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
