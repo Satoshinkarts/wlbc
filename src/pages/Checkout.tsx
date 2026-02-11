@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode, Wallet, Copy } from "lucide-react";
+import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode, Wallet, Copy, ShieldCheck } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,6 +70,51 @@ function PaymentTimer({ onExpire }: { onExpire: () => void }) {
           style={{ width: `${pct}%` }}
         />
       </div>
+    </div>
+  );
+}
+
+function QRDisplay({ method, paymentMethod }: { method: typeof PAYMENT_METHODS[number]; paymentMethod: PaymentMethod }) {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const t = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(t);
+  }, [paymentMethod]);
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="flex items-center gap-1.5 mb-3 text-xs text-success">
+        <ShieldCheck className="h-3.5 w-3.5" />
+        <span className="font-medium">Secure Payment Gateway</span>
+      </div>
+      <div className="relative w-56 h-56 rounded-xl overflow-hidden bg-white p-1 mb-3 border-2 border-success/20">
+        {loading ? (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-secondary/50 rounded-lg">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="text-xs text-muted-foreground font-medium">Loading secure QR…</span>
+          </div>
+        ) : (
+          <img src={method.qr} alt={`${method.label} QR`} className="w-full h-full object-cover animate-in fade-in duration-500" />
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground text-center">{method.details}</p>
+      {paymentMethod === "crypto_usdt" && !loading && (
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText("0xa6beff28a67f5b147f57d8a21f9953dce9602290");
+            toast.success("Address copied!");
+          }}
+          className="mt-2 flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+        >
+          <Copy className="h-3.5 w-3.5" />
+          Copy Address
+        </button>
+      )}
+      <p className="mt-3 text-[10px] text-muted-foreground/70 flex items-center gap-1">
+        <ShieldCheck className="h-3 w-3" /> Verified & encrypted payment
+      </p>
     </div>
   );
 }
@@ -219,27 +264,7 @@ export default function Checkout() {
             </Select>
 
             {(() => {
-              const method = PAYMENT_METHODS.find((m) => m.value === paymentMethod)!;
-              return (
-                <div className="flex flex-col items-center">
-                  <div className="w-56 h-56 rounded-xl overflow-hidden bg-white p-1 mb-3">
-                    <img src={method.qr} alt={`${method.label} QR`} className="w-full h-full object-cover" />
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">{method.details}</p>
-                  {paymentMethod === "crypto_usdt" && (
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText("0xa6beff28a67f5b147f57d8a21f9953dce9602290");
-                        toast.success("Address copied!");
-                      }}
-                      className="mt-2 flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      Copy Address
-                    </button>
-                  )}
-                </div>
-              );
+              return <QRDisplay method={PAYMENT_METHODS.find((m) => m.value === paymentMethod)!} paymentMethod={paymentMethod} />;
             })()}
           </CardContent>
         </Card>

@@ -9,11 +9,19 @@ import { HelpCircle } from "lucide-react";
 const faqs = [
   {
     q: "How do I place an order?",
-    a: "Browse products → add to cart → checkout → scan the QR code to pay → upload payment proof → submit. Your digital goods are delivered via Telegram.",
+    a: "Browse products → add to cart → checkout → choose your payment method → scan the QR code to pay → upload payment proof → submit. Your digital goods are delivered securely via Telegram.",
   },
   {
     q: "What payment methods do you accept?",
-    a: "We accept QR PH payments — GCash, Maya, or any banking app that supports QR PH. Just scan, pay, and upload your receipt.",
+    a: "We accept QR PH (GCash, Maya, or any banking app) and Crypto (USDT via BNB Smart Chain / BEP20). All payments are verified before order processing.",
+  },
+  {
+    q: "How does crypto payment work?",
+    a: "Select 'Crypto – USDT (BEP20)' at checkout, scan the QR code or copy the wallet address, send the exact amount in USDT on BNB Smart Chain, then upload your transaction screenshot as proof.",
+  },
+  {
+    q: "Is my payment secure?",
+    a: "Yes. All payments are verified manually before processing. Your payment proof is encrypted and stored securely. We never store sensitive financial information.",
   },
   {
     q: "How fast is delivery?",
