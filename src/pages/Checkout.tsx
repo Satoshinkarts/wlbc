@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode, Wallet, Copy, ShieldCheck } from "lucide-react";
+import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode, Wallet, Copy, ShieldCheck, RefreshCw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,7 +122,7 @@ function QRDisplay({ method, paymentMethod }: { method: typeof PAYMENT_METHODS[n
 
 export default function Checkout() {
   const { items, total, subtotal, discount, discountPct, clearCart, itemCount } = useCart();
-  const { convert } = usePhpToUsd();
+  const { convert, rate, apiUpdated } = usePhpToUsd();
   const { user } = useAuth();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -205,6 +205,17 @@ export default function Checkout() {
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
       <h1 className="mb-4 text-2xl font-bold text-foreground">Checkout</h1>
+      {rate && (
+        <div className="mb-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <RefreshCw className="h-3 w-3" />
+          <span>
+            1 PHP = ${rate.toFixed(4)} USD
+            {apiUpdated && (
+              <> · Updated {new Date(apiUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</>
+            )}
+          </span>
+        </div>
+      )}
 
       <div className="space-y-4">
         {/* Timer */}
