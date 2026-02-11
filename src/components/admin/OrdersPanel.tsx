@@ -1,28 +1,28 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Trash2, Loader2, Upload, TrendingUp, CalendarDays, Filter,
-  DollarSign, BarChart3, Users, Eye, KeyRound, FileUp, X, Image,
-  Minus,
+  DollarSign, BarChart3, Users, Eye, KeyRound, FileUp, Image,
+  Minus, Download, StickyNote, ArchiveX, AlertTriangle,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Order {
   id: string;
@@ -35,6 +35,7 @@ interface Order {
   remit: number;
   payment_proof_path: string;
   delivery_file_path: string;
+  admin_notes: string;
 }
 
 interface Profile {
@@ -49,15 +50,43 @@ interface OrdersPanelProps {
   profiles: Profile[];
 }
 
+// Simple sparkline-like bar chart
+function MiniChart({ data, label }: { data: { date: string; value: number }[]; label: string }) {
+  if (data.length === 0) return null;
+  const max = Math.max(...data.map(d => d.value), 1);
+  return (
+    <div>
+      <p className="text-[10px] text-muted-foreground mb-1">{label}</p>
+      <div className="flex items-end gap-[2px] h-16">
+        {data.map((d, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center">
+            <div
+              className="w-full bg-primary/70 rounded-t-sm min-h-[2px] transition-all"
+              style={{ height: `${(d.value / max) * 100}%` }}
+              title={`${d.date}: ₱${d.value.toFixed(0)}`}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between mt-0.5">
+        <span className="text-[8px] text-muted-foreground">{data[0]?.date}</span>
+        <span className="text-[8px] text-muted-foreground">{data[data.length - 1]?.date}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanelProps) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [filterUser, setFilterUser] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   // Order detail modal
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
+  const [minimized, setMinimized] = useState(false);
 
   // Customer detail modal
   const [customerModal, setCustomerModal] = useState<Profile | null>(null);
@@ -73,16 +102,24 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
   const [editingRemit, setEditingRemit] = useState<string | null>(null);
   const [remitValue, setRemitValue] = useState("");
 
+  // Admin notes
+  const [editingNotes, setEditingNotes] = useState<string | null>(null);
+  const [notesValue, setNotesValue] = useState("");
+
+  // Order items
+  const [orderItems, setOrderItems] = useState<any[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(false);
+
   const getProfileName = (userId: string) => {
     const p = profiles.find((pr) => pr.user_id === userId);
     return p ? (p.full_name || p.email) : userId.slice(0, 8);
   };
-
   const getProfile = (userId: string) => profiles.find((pr) => pr.user_id === userId);
 
   // Filtered orders
   const filteredOrders = orders.filter((o) => {
     if (filterUser !== "all" && o.user_id !== filterUser) return false;
+    if (filterStatus !== "all" && o.status !== filterStatus) return false;
     if (dateFrom && new Date(o.created_at) < new Date(dateFrom)) return false;
     if (dateTo && new Date(o.created_at) > new Date(dateTo + "T23:59:59")) return false;
     return true;
@@ -97,6 +134,46 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
 
   const orderUsers = Array.from(new Set(orders.map((o) => o.user_id)));
 
+  // Chart data - daily sales & profit
+  const chartData = useMemo(() => {
+    const dateMap: Record<string, { sales: number; profit: number }> = {};
+    filteredOrders
+      .filter(o => o.status !== "cancelled")
+      .forEach(o => {
+        const d = new Date(o.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        if (!dateMap[d]) dateMap[d] = { sales: 0, profit: 0 };
+        dateMap[d].sales += Number(o.total);
+        dateMap[d].profit += Number(o.total) - Number(o.remit || 0);
+      });
+    return Object.entries(dateMap)
+      .map(([date, v]) => ({ date, ...v }))
+      .slice(-14);
+  }, [filteredOrders]);
+
+  // CSV Export
+  const exportCSV = () => {
+    const headers = ["Order ID", "Customer", "Status", "Total", "Remit", "Profit", "Telegram", "Date"];
+    const rows = filteredOrders.map(o => [
+      o.id.slice(0, 8),
+      getProfileName(o.user_id),
+      o.status,
+      Number(o.total).toFixed(2),
+      Number(o.remit || 0).toFixed(2),
+      (Number(o.total) - Number(o.remit || 0)).toFixed(2),
+      o.shipping_address || "",
+      new Date(o.created_at).toLocaleString(),
+    ]);
+    const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${c}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported!");
+  };
+
   const updateOrderStatus = async (id: string, status: string) => {
     const { error } = await supabase.from("orders").update({ status }).eq("id", id);
     if (error) { toast.error(error.message); return; }
@@ -104,30 +181,47 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
     toast.success("Order updated");
   };
 
-  const deleteOrder = async (id: string) => {
+  const softDelete = async (id: string) => {
+    await updateOrderStatus(id, "cancelled");
+  };
+
+  const hardDelete = async (id: string) => {
     const { error: itemsErr } = await supabase.from("order_items").delete().eq("order_id", id);
     if (itemsErr) { toast.error(itemsErr.message); return; }
     const { error } = await supabase.from("orders").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     setOrders((prev) => prev.filter((o) => o.id !== id));
     if (selectedOrder?.id === id) setSelectedOrder(null);
-    toast.success("Order deleted");
+    toast.success("Order permanently deleted");
   };
 
   const viewReceipt = async (order: Order) => {
     setSelectedOrder(order);
+    setMinimized(false);
     setReceiptUrl(null);
-    if (order.payment_proof_path) {
-      setReceiptLoading(true);
-      try {
-        const { data } = await supabase.functions.invoke("admin-actions", {
-          body: { action: "get_receipt_url", proofPath: order.payment_proof_path },
-        });
-        if (data?.url) setReceiptUrl(data.url);
-        else toast.error("Receipt not found");
-      } catch { toast.error("Failed to load receipt"); }
-      setReceiptLoading(false);
-    }
+    setItemsLoading(true);
+
+    // Load items and receipt in parallel
+    const [_, itemsRes] = await Promise.all([
+      (async () => {
+        if (order.payment_proof_path) {
+          setReceiptLoading(true);
+          try {
+            const { data } = await supabase.functions.invoke("admin-actions", {
+              body: { action: "get_receipt_url", proofPath: order.payment_proof_path },
+            });
+            if (data?.url) setReceiptUrl(data.url);
+          } catch { }
+          setReceiptLoading(false);
+        }
+      })(),
+      supabase
+        .from("order_items")
+        .select("id, quantity, price, product_id, products(name)")
+        .eq("order_id", order.id) as any,
+    ]);
+    setOrderItems(itemsRes.data || []);
+    setItemsLoading(false);
   };
 
   const resetPassword = async () => {
@@ -140,18 +234,14 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
       const { data } = await supabase.functions.invoke("admin-actions", {
         body: { action: "reset_password", userId: customerModal.user_id, newPassword },
       });
-      if (data?.success) {
-        toast.success("Password reset successfully");
-        setNewPassword("");
-      } else {
-        toast.error(data?.error || "Failed to reset password");
-      }
-    } catch { toast.error("Failed to reset password"); }
+      if (data?.success) { toast.success("Password reset"); setNewPassword(""); }
+      else toast.error(data?.error || "Failed");
+    } catch { toast.error("Failed"); }
     setResettingPw(false);
   };
 
   const handleDelivery = async (order: Order) => {
-    if (!deliveryFile) { toast.error("Please select a file to upload"); return; }
+    if (!deliveryFile) { toast.error("Select a file"); return; }
     setDelivering(true);
     try {
       const ext = deliveryFile.name.split(".").pop();
@@ -159,39 +249,21 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
       const { error: uploadErr } = await supabase.storage.from("delivery-files").upload(filePath, deliveryFile, { upsert: true });
       if (uploadErr) throw uploadErr;
 
-      // Update order status and delivery file path
-      const { error: updateErr } = await supabase.from("orders").update({
-        status: "delivered",
-        delivery_file_path: filePath,
-      }).eq("id", order.id);
+      const { error: updateErr } = await supabase.from("orders").update({ status: "delivered", delivery_file_path: filePath }).eq("id", order.id);
       if (updateErr) throw updateErr;
 
-      // Get item details for the notification
-      const { data: itemsData } = await supabase
-        .from("order_items")
-        .select("quantity, product_id, products(name)")
-        .eq("order_id", order.id) as any;
-
+      const { data: itemsData } = await supabase.from("order_items").select("quantity, product_id, products(name)").eq("order_id", order.id) as any;
       const itemList = itemsData?.map((i: any) => `${i.products?.name || "Item"} x${i.quantity}`).join(", ") || "Items";
 
-      // Notify via Telegram
       await supabase.functions.invoke("admin-actions", {
-        body: {
-          action: "notify_delivery",
-          orderId: order.id,
-          telegram: order.shipping_address,
-          orderTitle: itemList,
-          deliveryFileUrl: filePath,
-        },
+        body: { action: "notify_delivery", orderId: order.id, telegram: order.shipping_address, orderTitle: itemList, deliveryFileUrl: filePath },
       });
 
       setOrders((prev) => prev.map((o) => o.id === order.id ? { ...o, status: "delivered", delivery_file_path: filePath } : o));
       setSelectedOrder((prev) => prev ? { ...prev, status: "delivered", delivery_file_path: filePath } : null);
       setDeliveryFile(null);
-      toast.success("Order marked as delivered & notification sent!");
-    } catch (err: any) {
-      toast.error(err.message || "Delivery failed");
-    }
+      toast.success("Delivered & notified!");
+    } catch (err: any) { toast.error(err.message || "Delivery failed"); }
     setDelivering(false);
   };
 
@@ -203,6 +275,15 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
     setSelectedOrder((prev) => prev ? { ...prev, remit: val } : null);
     setEditingRemit(null);
     toast.success("Remit saved");
+  };
+
+  const saveAdminNotes = async (orderId: string) => {
+    const { error } = await supabase.from("orders").update({ admin_notes: notesValue }).eq("id", orderId);
+    if (error) { toast.error(error.message); return; }
+    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, admin_notes: notesValue } : o));
+    setSelectedOrder((prev) => prev ? { ...prev, admin_notes: notesValue } : null);
+    setEditingNotes(null);
+    toast.success("Notes saved");
   };
 
   return (
@@ -242,11 +323,28 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
         </Card>
       </div>
 
+      {/* Charts */}
+      {chartData.length > 1 && (
+        <div className="grid grid-cols-2 gap-2">
+          <Card className="bg-card border-border p-3">
+            <MiniChart data={chartData.map(d => ({ date: d.date, value: d.sales }))} label="Sales Trend" />
+          </Card>
+          <Card className="bg-card border-border p-3">
+            <MiniChart data={chartData.map(d => ({ date: d.date, value: d.profit }))} label="Profit Trend" />
+          </Card>
+        </div>
+      )}
+
       {/* Filters */}
       <Card className="bg-card border-border p-3">
-        <div className="flex items-center gap-2 mb-2">
-          <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-          <p className="text-xs font-semibold text-foreground">Filters</p>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-xs font-semibold text-foreground">Filters</p>
+          </div>
+          <Button variant="outline" size="sm" className="text-xs h-7 border-border text-muted-foreground" onClick={exportCSV}>
+            <Download className="mr-1 h-3 w-3" /> Export CSV
+          </Button>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="flex items-center gap-1.5">
@@ -256,7 +354,7 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
             <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-secondary border-border text-foreground text-xs h-8 w-32" />
           </div>
           <Select value={filterUser} onValueChange={setFilterUser}>
-            <SelectTrigger className="w-40 bg-secondary border-border text-foreground text-xs h-8">
+            <SelectTrigger className="w-36 bg-secondary border-border text-foreground text-xs h-8">
               <SelectValue placeholder="All users" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
@@ -266,8 +364,19 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
               ))}
             </SelectContent>
           </Select>
-          {(dateFrom || dateTo || filterUser !== "all") && (
-            <Button variant="ghost" size="sm" className="text-xs h-8 text-muted-foreground" onClick={() => { setDateFrom(""); setDateTo(""); setFilterUser("all"); }}>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-28 bg-secondary border-border text-foreground text-xs h-8">
+              <SelectValue placeholder="All status" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border">
+              <SelectItem value="all" className="text-foreground text-xs">All status</SelectItem>
+              {["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"].map(s => (
+                <SelectItem key={s} value={s} className="text-foreground text-xs capitalize">{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {(dateFrom || dateTo || filterUser !== "all" || filterStatus !== "all") && (
+            <Button variant="ghost" size="sm" className="text-xs h-8 text-muted-foreground" onClick={() => { setDateFrom(""); setDateTo(""); setFilterUser("all"); setFilterStatus("all"); }}>
               Clear
             </Button>
           )}
@@ -286,6 +395,7 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
                   <div className="flex items-center gap-2">
                     <p className="font-mono text-xs text-muted-foreground">#{order.id.slice(0, 8)}</p>
                     {order.payment_proof_path && <Image className="h-3 w-3 text-primary" />}
+                    {order.admin_notes && <StickyNote className="h-3 w-3 text-warning" />}
                   </div>
                   <p
                     className="text-[11px] text-primary/80 hover:underline cursor-pointer"
@@ -299,7 +409,7 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
                   </p>
                   <p className="text-sm font-bold text-primary">₱{Number(order.total).toFixed(2)}</p>
                   {Number(order.remit) > 0 && (
-                    <p className="text-[10px] text-muted-foreground">Remit: ₱{Number(order.remit).toFixed(2)}</p>
+                    <p className="text-[10px] text-muted-foreground">Remit: ₱{Number(order.remit).toFixed(2)} · Profit: ₱{(Number(order.total) - Number(order.remit)).toFixed(2)}</p>
                   )}
                   <p className="text-[11px] text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground truncate max-w-[180px]">TG: {order.shipping_address}</p>
@@ -319,9 +429,32 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => viewReceipt(order)}>
                       <Eye className="h-3 w-3" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteOrder(order.id)}>
-                      <Trash2 className="h-3 w-3" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-warning" onClick={() => softDelete(order.id)} title="Cancel order">
+                      <ArchiveX className="h-3 w-3" />
                     </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title="Permanently delete">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-card border-border max-w-xs">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-foreground text-sm flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4 text-destructive" /> Delete Order
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="text-muted-foreground text-xs">
+                            This permanently deletes order #{order.id.slice(0, 8)} and all its items. This cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="text-xs h-8">Cancel</AlertDialogCancel>
+                          <AlertDialogAction className="bg-destructive text-destructive-foreground text-xs h-8" onClick={() => hardDelete(order.id)}>
+                            Delete Forever
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </div>
@@ -331,11 +464,14 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
       </div>
 
       {/* ─── Order Detail / Receipt Modal ─── */}
-      <Dialog open={!!selectedOrder} onOpenChange={(open) => { if (!open) { setSelectedOrder(null); setReceiptUrl(null); setDeliveryFile(null); } }}>
+      <Dialog open={!!selectedOrder && !minimized} onOpenChange={(open) => { if (!open) { setSelectedOrder(null); setReceiptUrl(null); setDeliveryFile(null); } }}>
         <DialogContent className="bg-card border-border max-w-sm mx-4 max-h-[90vh] overflow-y-auto p-4">
           <DialogHeader>
             <DialogTitle className="text-foreground text-sm flex items-center justify-between">
-              Order #{selectedOrder?.id.slice(0, 8)}
+              <span>Order #{selectedOrder?.id.slice(0, 8)}</span>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => setMinimized(true)} title="Minimize">
+                <Minus className="h-3 w-3" />
+              </Button>
             </DialogTitle>
           </DialogHeader>
           {selectedOrder && (
@@ -344,13 +480,7 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <p className="text-muted-foreground">Customer</p>
-                  <p
-                    className="text-primary cursor-pointer hover:underline font-medium"
-                    onClick={() => {
-                      const prof = getProfile(selectedOrder.user_id);
-                      if (prof) setCustomerModal(prof);
-                    }}
-                  >
+                  <p className="text-primary cursor-pointer hover:underline font-medium" onClick={() => { const prof = getProfile(selectedOrder.user_id); if (prof) setCustomerModal(prof); }}>
                     {getProfileName(selectedOrder.user_id)}
                   </p>
                 </div>
@@ -370,13 +500,16 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
                       <Button size="sm" className="h-6 text-[10px] px-2" onClick={() => saveRemit(selectedOrder.id)}>Save</Button>
                     </div>
                   ) : (
-                    <p
-                      className="font-medium text-foreground cursor-pointer hover:text-primary"
-                      onClick={() => { setEditingRemit(selectedOrder.id); setRemitValue(String(selectedOrder.remit || 0)); }}
-                    >
+                    <p className="font-medium text-foreground cursor-pointer hover:text-primary" onClick={() => { setEditingRemit(selectedOrder.id); setRemitValue(String(selectedOrder.remit || 0)); }}>
                       ₱{Number(selectedOrder.remit || 0).toFixed(2)} ✏️
                     </p>
                   )}
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Profit</p>
+                  <p className={`font-bold ${(Number(selectedOrder.total) - Number(selectedOrder.remit || 0)) >= 0 ? "text-primary" : "text-destructive"}`}>
+                    ₱{(Number(selectedOrder.total) - Number(selectedOrder.remit || 0)).toFixed(2)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Telegram</p>
@@ -387,12 +520,51 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
                   <p className="text-foreground">{new Date(selectedOrder.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
+
+              {/* Order items */}
+              <div>
+                <p className="text-xs font-semibold text-foreground mb-1.5">Items</p>
+                {itemsLoading ? (
+                  <div className="flex justify-center py-3"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div>
+                ) : (
+                  <div className="space-y-1">
+                    {orderItems.map((item: any) => (
+                      <div key={item.id} className="flex justify-between text-xs bg-secondary rounded px-2 py-1.5">
+                        <span className="text-foreground">{item.products?.name || "Item"} ×{item.quantity}</span>
+                        <span className="text-muted-foreground">₱{(Number(item.price) * item.quantity).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {selectedOrder.notes && (
                 <div className="text-xs">
-                  <p className="text-muted-foreground">Notes</p>
+                  <p className="text-muted-foreground">Customer Notes</p>
                   <p className="text-foreground">{selectedOrder.notes}</p>
                 </div>
               )}
+
+              {/* Admin Notes */}
+              <div className="text-xs space-y-1.5">
+                <p className="text-muted-foreground flex items-center gap-1"><StickyNote className="h-3 w-3" /> Admin Notes (internal)</p>
+                {editingNotes === selectedOrder.id ? (
+                  <div className="space-y-1.5">
+                    <Textarea value={notesValue} onChange={(e) => setNotesValue(e.target.value)} rows={2} className="bg-secondary border-border text-foreground text-xs" placeholder="Internal notes..." />
+                    <div className="flex gap-1">
+                      <Button size="sm" className="h-6 text-[10px] px-2" onClick={() => saveAdminNotes(selectedOrder.id)}>Save</Button>
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => setEditingNotes(null)}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p
+                    className="text-foreground cursor-pointer hover:text-primary"
+                    onClick={() => { setEditingNotes(selectedOrder.id); setNotesValue(selectedOrder.admin_notes || ""); }}
+                  >
+                    {selectedOrder.admin_notes || "Click to add notes..."} ✏️
+                  </p>
+                )}
+              </div>
 
               {/* Receipt */}
               <div className="space-y-2">
@@ -408,7 +580,7 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
                 )}
               </div>
 
-              {/* Delivery upload (shown when not yet delivered) */}
+              {/* Delivery upload */}
               {selectedOrder.status !== "delivered" && (
                 <div className="space-y-2 border-t border-border pt-3">
                   <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
@@ -416,20 +588,13 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
                   </p>
                   <div
                     onClick={() => deliveryFileRef.current?.click()}
-                    className={`flex cursor-pointer items-center gap-2 rounded-lg border border-dashed p-3 text-xs transition ${
-                      deliveryFile ? "border-primary/50 bg-primary/5 text-primary" : "border-border bg-secondary text-muted-foreground hover:border-primary/30"
-                    }`}
+                    className={`flex cursor-pointer items-center gap-2 rounded-lg border border-dashed p-3 text-xs transition ${deliveryFile ? "border-primary/50 bg-primary/5 text-primary" : "border-border bg-secondary text-muted-foreground hover:border-primary/30"}`}
                   >
                     <Upload className="h-4 w-4" />
                     {deliveryFile ? deliveryFile.name : "Upload delivery file"}
                   </div>
                   <input ref={deliveryFileRef} type="file" className="hidden" onChange={(e) => setDeliveryFile(e.target.files?.[0] || null)} />
-                  <Button
-                    size="sm"
-                    disabled={!deliveryFile || delivering}
-                    onClick={() => handleDelivery(selectedOrder)}
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs"
-                  >
+                  <Button size="sm" disabled={!deliveryFile || delivering} onClick={() => handleDelivery(selectedOrder)} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs">
                     {delivering ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <FileUp className="mr-1.5 h-3 w-3" />}
                     Deliver & Notify Telegram
                   </Button>
@@ -440,6 +605,22 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
         </DialogContent>
       </Dialog>
 
+      {/* Minimized order bar */}
+      {selectedOrder && minimized && (
+        <div className="fixed bottom-4 left-4 right-4 z-50 bg-card border border-border rounded-xl p-3 shadow-lg flex items-center justify-between animate-fade-in">
+          <div className="flex items-center gap-2">
+            <Badge className="bg-primary/20 text-primary text-[10px]">#{selectedOrder.id.slice(0, 8)}</Badge>
+            <span className="text-xs text-foreground font-medium">₱{Number(selectedOrder.total).toFixed(2)}</span>
+          </div>
+          <div className="flex gap-1.5">
+            <Button size="sm" variant="outline" className="h-7 text-xs border-border" onClick={() => setMinimized(false)}>Expand</Button>
+            <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={() => { setSelectedOrder(null); setMinimized(false); }}>
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* ─── Customer Detail Modal ─── */}
       <Dialog open={!!customerModal} onOpenChange={(open) => { if (!open) { setCustomerModal(null); setNewPassword(""); } }}>
         <DialogContent className="bg-card border-border max-w-xs mx-4 p-4">
@@ -449,30 +630,15 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
           {customerModal && (
             <div className="space-y-3">
               <div className="space-y-1.5 text-xs">
-                <div>
-                  <p className="text-muted-foreground">Name</p>
-                  <p className="text-foreground font-medium">{customerModal.full_name || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Email</p>
-                  <p className="text-foreground">{customerModal.email}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">User ID</p>
-                  <p className="text-foreground font-mono text-[10px]">{customerModal.user_id}</p>
-                </div>
+                <div><p className="text-muted-foreground">Name</p><p className="text-foreground font-medium">{customerModal.full_name || "—"}</p></div>
+                <div><p className="text-muted-foreground">Email</p><p className="text-foreground">{customerModal.email}</p></div>
+                <div><p className="text-muted-foreground">User ID</p><p className="text-foreground font-mono text-[10px]">{customerModal.user_id}</p></div>
               </div>
               <div className="border-t border-border pt-3 space-y-2">
                 <Label className="text-xs text-foreground flex items-center gap-1.5">
                   <KeyRound className="h-3 w-3 text-primary" /> Reset Password
                 </Label>
-                <Input
-                  type="password"
-                  placeholder="New password (min 6 chars)"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="bg-secondary border-border text-foreground text-xs h-8"
-                />
+                <Input type="password" placeholder="New password (min 6 chars)" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-secondary border-border text-foreground text-xs h-8" />
                 <Button size="sm" disabled={resettingPw || newPassword.length < 6} onClick={resetPassword} className="w-full text-xs" variant="destructive">
                   {resettingPw ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <KeyRound className="mr-1.5 h-3 w-3" />}
                   Reset Password
