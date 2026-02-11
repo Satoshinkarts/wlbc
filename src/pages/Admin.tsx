@@ -50,6 +50,7 @@ interface Profile {
   user_id: string;
   full_name: string;
   email: string;
+  is_vip: boolean;
 }
 
 interface DiscountTier {
@@ -254,7 +255,7 @@ export default function Admin() {
       const [productsRes, ordersRes, profilesRes] = await Promise.all([
         supabase.from("products").select("*").order("created_at", { ascending: false }),
         supabase.from("orders").select("*").order("created_at", { ascending: false }),
-        supabase.from("profiles").select("user_id, full_name, email"),
+        supabase.from("profiles").select("user_id, full_name, email, is_vip"),
       ]);
       setProducts((productsRes.data as Product[]) || []);
       setOrders((ordersRes.data as Order[]) || []);

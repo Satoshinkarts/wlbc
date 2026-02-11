@@ -8,12 +8,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Loader2, KeyRound, User, Save, Send } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function Settings() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [profile, setProfile] = useState({ full_name: "", phone: "", address: "", telegram_chat_id: "" });
+  const [profile, setProfile] = useState({ full_name: "", phone: "", address: "", telegram_chat_id: "", is_vip: false });
   const [profileLoading, setProfileLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -33,7 +34,7 @@ export default function Settings() {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, phone, address, telegram_chat_id")
+        .select("full_name, phone, address, telegram_chat_id, is_vip")
         .eq("user_id", user.id)
         .maybeSingle();
       if (data) {
@@ -42,6 +43,7 @@ export default function Settings() {
           phone: data.phone || "",
           address: data.address || "",
           telegram_chat_id: data.telegram_chat_id || "",
+          is_vip: data.is_vip || false,
         });
       }
       setProfileLoading(false);
@@ -108,7 +110,12 @@ export default function Settings() {
 
   return (
     <div className="px-4 py-6 max-w-lg mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+        {profile.is_vip && (
+          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">👑 VIP</Badge>
+        )}
+      </div>
 
       {/* Profile */}
       <Card className="bg-card border-border">

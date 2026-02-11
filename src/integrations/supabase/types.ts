@@ -240,6 +240,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          is_vip: boolean
           phone: string | null
           referral_code: string | null
           referred_by: string | null
@@ -253,6 +254,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_vip?: boolean
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
@@ -266,6 +268,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_vip?: boolean
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
