@@ -28,6 +28,8 @@ interface Product {
   stock: number;
   category: string;
   is_active: boolean;
+  sku: string;
+  cost: number;
 }
 
 interface Order {
@@ -41,6 +43,7 @@ interface Order {
   remit: number;
   payment_proof_path: string;
   delivery_file_path: string;
+  admin_notes: string;
 }
 
 interface Profile {
@@ -66,6 +69,8 @@ function ProductForm({
     price: number;
     stock: number;
     category: string;
+    sku: string;
+    cost: number;
     is_active: boolean;
     imageFile: File | null;
     discountTiers: DiscountTier[];
@@ -78,6 +83,8 @@ function ProductForm({
   const [price, setPrice] = useState(initial ? String(initial.price) : "");
   const [stock, setStock] = useState(initial ? String(initial.stock) : "");
   const [category, setCategory] = useState(initial?.category || "");
+  const [sku, setSku] = useState(initial?.sku || "");
+  const [cost, setCost] = useState(initial ? String(initial.cost || 0) : "");
   const [isActive, setIsActive] = useState(initial?.is_active ?? true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [showDiscount, setShowDiscount] = useState(false);
@@ -105,6 +112,8 @@ function ProductForm({
       price: parseFloat(price),
       stock: parseInt(stock || "0"),
       category,
+      sku,
+      cost: parseFloat(cost || "0"),
       is_active: isActive,
       imageFile,
       discountTiers: showDiscount ? tiers.filter((t) => t.minQty > 0 && t.discountPct > 0) : [],
@@ -122,8 +131,16 @@ function ProductForm({
         <Input value={category} onChange={(e) => setCategory(e.target.value)} className="bg-secondary border-border text-foreground text-sm" />
       </div>
       <div className="space-y-1.5">
+        <Label className="text-foreground text-sm">SKU</Label>
+        <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="e.g. GMAIL-PVA-01" className="bg-secondary border-border text-foreground text-sm" />
+      </div>
+      <div className="space-y-1.5">
         <Label className="text-foreground text-sm">Price (₱)</Label>
         <Input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required className="bg-secondary border-border text-foreground text-sm" />
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-foreground text-sm">Cost (₱) <span className="text-muted-foreground text-[10px]">hidden</span></Label>
+        <Input type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} className="bg-secondary border-border text-foreground text-sm" />
       </div>
       <div className="space-y-1.5">
         <Label className="text-foreground text-sm">Stock</Label>
@@ -271,6 +288,8 @@ export default function Admin() {
           price: formData.price,
           stock: formData.stock,
           category: formData.category,
+          sku: formData.sku,
+          cost: formData.cost,
           image_url,
         })
         .select()
@@ -301,6 +320,8 @@ export default function Admin() {
           price: formData.price,
           stock: formData.stock,
           category: formData.category,
+          sku: formData.sku,
+          cost: formData.cost,
           is_active: formData.is_active,
           image_url,
         })
@@ -364,8 +385,8 @@ export default function Admin() {
                     {p.image_url ? <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">—</div>}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">₱{Number(p.price).toFixed(2)} · Stock: {p.stock === -1 ? "∞" : p.stock} {!p.is_active && <span className="text-destructive">· Hidden</span>}</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{p.name} {p.sku && <span className="text-[10px] text-muted-foreground font-mono">({p.sku})</span>}</p>
+                    <p className="text-xs text-muted-foreground">₱{Number(p.price).toFixed(2)} {Number(p.cost) > 0 && `· Cost: ₱${Number(p.cost).toFixed(2)}`} · Stock: {p.stock === -1 ? "∞" : p.stock} {!p.is_active && <span className="text-destructive">· Hidden</span>}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">

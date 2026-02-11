@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          id: string
+          target_id: string | null
+          target_type: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -58,6 +88,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          admin_notes: string | null
           created_at: string
           delivery_file_path: string | null
           id: string
@@ -71,6 +102,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string
           delivery_file_path?: string | null
           id?: string
@@ -84,6 +116,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string
           delivery_file_path?: string | null
           id?: string
@@ -158,6 +191,7 @@ export type Database = {
       products: {
         Row: {
           category: string | null
+          cost: number
           created_at: string
           description: string | null
           id: string
@@ -165,11 +199,13 @@ export type Database = {
           is_active: boolean
           name: string
           price: number
+          sku: string | null
           stock: number
           updated_at: string
         }
         Insert: {
           category?: string | null
+          cost?: number
           created_at?: string
           description?: string | null
           id?: string
@@ -177,11 +213,13 @@ export type Database = {
           is_active?: boolean
           name: string
           price?: number
+          sku?: string | null
           stock?: number
           updated_at?: string
         }
         Update: {
           category?: string | null
+          cost?: number
           created_at?: string
           description?: string | null
           id?: string
@@ -189,6 +227,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           price?: number
+          sku?: string | null
           stock?: number
           updated_at?: string
         }
