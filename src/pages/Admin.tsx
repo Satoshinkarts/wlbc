@@ -9,13 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -23,7 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Trash2, Loader2, Upload, Package, ShoppingCart, Pencil, Tag, TrendingUp, CalendarDays, Filter, DollarSign, BarChart3, Users } from "lucide-react";
+import { Plus, Trash2, Loader2, Upload, Package, ShoppingCart, Pencil, Tag } from "lucide-react";
+import OrdersPanel from "@/components/admin/OrdersPanel";
 
 interface Product {
   id: string;
@@ -44,6 +38,9 @@ interface Order {
   shipping_address: string;
   created_at: string;
   notes: string | null;
+  remit: number;
+  payment_proof_path: string;
+  delivery_file_path: string;
 }
 
 interface Profile {
@@ -52,7 +49,6 @@ interface Profile {
   email: string;
 }
 
-// Discount tier for a product
 interface DiscountTier {
   minQty: number;
   discountPct: number;
@@ -227,10 +223,6 @@ export default function Admin() {
   const [saving, setSaving] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [showEdit, setShowEdit] = useState(false);
-  // Order filters
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [filterUser, setFilterUser] = useState("all");
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -334,50 +326,11 @@ export default function Admin() {
     toast.success("Product deleted");
   };
 
-  const updateOrderStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
-    toast.success("Order updated");
-  };
-
-  const deleteOrder = async (id: string) => {
-    // Delete order items first, then the order
-    const { error: itemsErr } = await supabase.from("order_items").delete().eq("order_id", id);
-    if (itemsErr) { toast.error(itemsErr.message); return; }
-    const { error } = await supabase.from("orders").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setOrders((prev) => prev.filter((o) => o.id !== id));
-    toast.success("Order deleted");
-  };
-
-  const getProfileName = (userId: string) => {
-    const p = profiles.find((pr) => pr.user_id === userId);
-    return p ? (p.full_name || p.email) : userId.slice(0, 8);
-  };
-
-  // Filtered orders
-  const filteredOrders = orders.filter((o) => {
-    if (filterUser !== "all" && o.user_id !== filterUser) return false;
-    if (dateFrom && new Date(o.created_at) < new Date(dateFrom)) return false;
-    if (dateTo && new Date(o.created_at) > new Date(dateTo + "T23:59:59")) return false;
-    return true;
-  });
-
-  // Metrics from filtered orders
-  const totalSales = filteredOrders.reduce((sum, o) => sum + (o.status !== "cancelled" ? Number(o.total) : 0), 0);
-  const totalOrders = filteredOrders.length;
-  const pendingOrders = filteredOrders.filter((o) => o.status === "pending").length;
-  const completedOrders = filteredOrders.filter((o) => o.status === "delivered").length;
-  const uniqueUsers = new Set(filteredOrders.map((o) => o.user_id)).size;
-
   if (authLoading || loading) {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   if (!isAdmin) return null;
-
-  const orderUsers = Array.from(new Set(orders.map((o) => o.user_id)));
 
   return (
     <div className="px-4 py-6">
@@ -428,106 +381,8 @@ export default function Admin() {
           </div>
         </TabsContent>
 
-        <TabsContent value="orders" className="mt-4 space-y-4">
-          {/* Metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <Card className="bg-card border-border p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <DollarSign className="h-4 w-4 text-primary" />
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Total Sales</p>
-              </div>
-              <p className="text-lg font-bold text-foreground">₱{totalSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            </Card>
-            <Card className="bg-card border-border p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <BarChart3 className="h-4 w-4 text-primary" />
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Orders</p>
-              </div>
-              <p className="text-lg font-bold text-foreground">{totalOrders}</p>
-            </Card>
-            <Card className="bg-card border-border p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Pending</p>
-              </div>
-              <p className="text-lg font-bold text-foreground">{pendingOrders}</p>
-            </Card>
-            <Card className="bg-card border-border p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Users className="h-4 w-4 text-primary" />
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Customers</p>
-              </div>
-              <p className="text-lg font-bold text-foreground">{uniqueUsers}</p>
-            </Card>
-          </div>
-
-          {/* Filters */}
-          <Card className="bg-card border-border p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-              <p className="text-xs font-semibold text-foreground">Filters</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <div className="flex items-center gap-1.5">
-                <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
-                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-secondary border-border text-foreground text-xs h-8 w-36" />
-                <span className="text-xs text-muted-foreground">to</span>
-                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-secondary border-border text-foreground text-xs h-8 w-36" />
-              </div>
-              <Select value={filterUser} onValueChange={setFilterUser}>
-                <SelectTrigger className="w-44 bg-secondary border-border text-foreground text-xs h-8">
-                  <SelectValue placeholder="All users" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border">
-                  <SelectItem value="all" className="text-foreground text-xs">All users</SelectItem>
-                  {orderUsers.map((uid) => (
-                    <SelectItem key={uid} value={uid} className="text-foreground text-xs">{getProfileName(uid)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {(dateFrom || dateTo || filterUser !== "all") && (
-                <Button variant="ghost" size="sm" className="text-xs h-8 text-muted-foreground" onClick={() => { setDateFrom(""); setDateTo(""); setFilterUser("all"); }}>
-                  Clear
-                </Button>
-              )}
-            </div>
-          </Card>
-
-          {/* Order list */}
-          <div className="space-y-2">
-            {filteredOrders.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">No orders match filters.</p>
-            ) : (
-              filteredOrders.map((order) => (
-                <Card key={order.id} className="bg-card border-border p-3 animate-fade-in">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-mono text-xs text-muted-foreground">#{order.id.slice(0, 8)}</p>
-                      <p className="text-[11px] text-muted-foreground">{getProfileName(order.user_id)}</p>
-                      <p className="text-sm font-bold text-primary">₱{Number(order.total).toFixed(2)}</p>
-                      <p className="text-[11px] text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground truncate max-w-[200px]">TG: {order.shipping_address}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Select value={order.status} onValueChange={(v) => updateOrderStatus(order.id, v)}>
-                        <SelectTrigger className="w-28 bg-secondary border-border text-foreground text-xs h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-card border-border">
-                          {["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"].map((s) => (
-                            <SelectItem key={s} value={s} className="text-foreground text-xs">{s}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteOrder(order.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))
-            )}
-          </div>
+        <TabsContent value="orders" className="mt-4">
+          <OrdersPanel orders={orders} setOrders={setOrders} profiles={profiles} />
         </TabsContent>
       </Tabs>
 

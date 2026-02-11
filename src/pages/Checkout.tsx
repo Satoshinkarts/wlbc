@@ -177,6 +177,8 @@ export default function Checkout() {
         proofPath = `${user.id}/${orderId}.${ext}`;
         const { error: uploadErr } = await supabase.storage.from("payment-proofs").upload(proofPath, proofFile);
         if (uploadErr) throw uploadErr;
+        // Save proof path to order
+        await supabase.from("orders").update({ payment_proof_path: proofPath }).eq("id", orderId);
       }
 
       try {
