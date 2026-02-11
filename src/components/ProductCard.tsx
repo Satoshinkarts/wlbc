@@ -1,4 +1,4 @@
-import { ShoppingCart, Infinity } from "lucide-react";
+import { ShoppingCart, Infinity, AlertTriangle } from "lucide-react";
 import { usePhpToUsd } from "@/hooks/use-forex";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +24,7 @@ export default function ProductCard({ id, name, description, price, image_url, s
 
   const isInfinite = stock === -1;
   const inStock = isInfinite || stock > 0;
+  const isLowStock = !isInfinite && stock > 0 && stock <= 5;
 
   const handleAdd = () => {
     if (!user) { navigate("/auth"); return; }
@@ -34,13 +35,27 @@ export default function ProductCard({ id, name, description, price, image_url, s
   const isFeatured = name.includes("PVA - Gmail");
 
   return (
-    <Card className={`group overflow-hidden bg-card border-border hover:border-primary/30 transition-all duration-300 animate-fade-in ${isFeatured ? "ring-2 ring-primary/50 border-primary/40 shadow-[0_0_15px_hsl(var(--primary)/0.2)]" : ""}`}>
+    <Card className={`group overflow-hidden bg-card border-border transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_25px_hsl(var(--primary)/0.1)] hover:-translate-y-0.5 animate-fade-in ${isFeatured ? "ring-2 ring-primary/50 border-primary/40 shadow-[0_0_15px_hsl(var(--primary)/0.2)]" : ""}`}>
       <div className="relative aspect-square overflow-hidden bg-secondary">
-        {isFeatured && (
-          <span className="absolute top-1.5 left-1.5 z-10 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md">
-            🔥 Best Seller
-          </span>
-        )}
+        {/* Badges */}
+        <div className="absolute top-1.5 left-1.5 z-10 flex flex-col gap-1">
+          {isFeatured && (
+            <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md">
+              🔥 Best Seller
+            </span>
+          )}
+          {isLowStock && (
+            <span className="bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md flex items-center gap-0.5">
+              <AlertTriangle className="h-2.5 w-2.5" /> Only {stock} left
+            </span>
+          )}
+          {inStock && !isLowStock && !isInfinite && (
+            <span className="bg-success/90 text-success-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md">
+              ✓ In Stock
+            </span>
+          )}
+        </div>
+
         {image_url ? (
           <img src={image_url} alt={name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
@@ -55,7 +70,7 @@ export default function ProductCard({ id, name, description, price, image_url, s
             <span className="text-sm font-bold text-primary">₱{price.toFixed(2)}</span>
             <span className="block text-[10px] text-muted-foreground">(~${convert(price).toFixed(2)})</span>
             {isInfinite && (
-              <span className="ml-1.5 inline-flex items-center text-[10px] text-success">
+              <span className="inline-flex items-center text-[10px] text-success">
                 <Infinity className="h-3 w-3 mr-0.5" />In Stock
               </span>
             )}
