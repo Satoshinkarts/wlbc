@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode } from "lucide-react";
+import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode, Wallet } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,9 +20,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import qrPaymentImage from "@/assets/qr-payment.jpg";
+import qrCryptoImage from "@/assets/qr-crypto-usdt.jpg";
 
-const PAYMENT_TIMEOUT = 10 * 60; // 10 minutes in seconds
+const PAYMENT_TIMEOUT = 10 * 60;
+
+type PaymentMethod = "qr_ph" | "crypto_usdt";
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string; qr: string; details: string }[] = [
+  { value: "qr_ph", label: "QR PH (GCash / Maya)", qr: qrPaymentImage, details: "Scan with your e-wallet or banking app" },
+  { value: "crypto_usdt", label: "Crypto – USDT (BEP20)", qr: qrCryptoImage, details: "Send USDT to: 0xa6beff28a67f5b147f57d8a21f9953dce9602290 · BNB Smart Chain" },
+];
 
 function PaymentTimer({ onExpire }: { onExpire: () => void }) {
   const [seconds, setSeconds] = useState(PAYMENT_TIMEOUT);
@@ -69,6 +84,7 @@ export default function Checkout() {
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("qr_ph");
   const [expired, setExpired] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,21 +198,37 @@ export default function Checkout() {
           </CardContent>
         </Card>
 
-        {/* QR Payment */}
+        {/* Payment Method */}
         <Card className="bg-card border-border">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <QrCode className="h-4 w-4 text-primary" />
-              Scan to Pay (QR PH)
+              <Wallet className="h-4 w-4 text-primary" />
+              Payment Method
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center px-4 pb-4">
-            <div className="w-48 h-48 rounded-xl overflow-hidden bg-white p-2 mb-3">
-              <img src={qrPaymentImage} alt="QR Payment Code" className="w-full h-full object-contain" />
-            </div>
-            <p className="text-xs text-muted-foreground text-center">
-              Scan the QR code using your preferred e-wallet or banking app, then upload your proof below.
-            </p>
+          <CardContent className="px-4 pb-4 space-y-3">
+            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+              <SelectTrigger className="bg-secondary border-border text-foreground text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                {PAYMENT_METHODS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(() => {
+              const method = PAYMENT_METHODS.find((m) => m.value === paymentMethod)!;
+              return (
+                <div className="flex flex-col items-center">
+                  <div className="w-48 h-48 rounded-xl overflow-hidden bg-white p-2 mb-3">
+                    <img src={method.qr} alt={`${method.label} QR`} className="w-full h-full object-contain" />
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">{method.details}</p>
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
 
