@@ -222,8 +222,8 @@ export default function Checkout() {
               const method = PAYMENT_METHODS.find((m) => m.value === paymentMethod)!;
               return (
                 <div className="flex flex-col items-center">
-                  <div className="w-48 h-48 rounded-xl overflow-hidden bg-white p-2 mb-3">
-                    <img src={method.qr} alt={`${method.label} QR`} className="w-full h-full object-contain" />
+                  <div className="w-56 h-56 rounded-xl overflow-hidden bg-white p-1 mb-3">
+                    <img src={method.qr} alt={`${method.label} QR`} className="w-full h-full object-cover" />
                   </div>
                   <p className="text-xs text-muted-foreground text-center">{method.details}</p>
                 </div>
