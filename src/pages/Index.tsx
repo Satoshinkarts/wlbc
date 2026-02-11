@@ -11,7 +11,7 @@ import FooterSection from "@/components/home/FooterSection";
 
 export default function Index() {
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col">
+    <div>
       {/* Urgency bar */}
       <UrgencyBanner />
 
