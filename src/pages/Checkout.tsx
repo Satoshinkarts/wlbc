@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode, Wallet } from "lucide-react";
+import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode, Wallet, Copy } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -226,6 +226,18 @@ export default function Checkout() {
                     <img src={method.qr} alt={`${method.label} QR`} className="w-full h-full object-cover" />
                   </div>
                   <p className="text-xs text-muted-foreground text-center">{method.details}</p>
+                  {paymentMethod === "crypto_usdt" && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText("0xa6beff28a67f5b147f57d8a21f9953dce9602290");
+                        toast.success("Address copied!");
+                      }}
+                      className="mt-2 flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Copy Address
+                    </button>
+                  )}
                 </div>
               );
             })()}
