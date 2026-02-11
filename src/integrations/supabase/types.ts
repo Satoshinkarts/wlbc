@@ -214,6 +214,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_own_order: { Args: { _order_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
