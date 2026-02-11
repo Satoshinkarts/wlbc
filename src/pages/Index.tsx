@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Shield, Zap, Star, Users, Clock, CheckCircle } from "lucide-react";
+import { ShoppingBag, Shield, Zap, Star, Users, Clock, CheckCircle, Tag } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
+import { usePhpToUsd } from "@/hooks/use-forex";
 
 const PRODUCT_NAMES = [
   "📧 PVA Gmail Accounts",
@@ -105,6 +106,41 @@ function TrustBadges() {
   );
 }
 
+function PricingShowcase() {
+  const { convert } = usePhpToUsd();
+  const deals = [
+    { name: "Gmail PVA", price: 10, emoji: "📧" },
+    { name: "Facebook Acct", price: 10, emoji: "👤" },
+    { name: "Instagram Acct", price: 10, emoji: "📸" },
+    { name: "Twitter / X", price: 10, emoji: "🐦" },
+    { name: "Outlook PVA", price: 10, emoji: "📨" },
+    { name: "Telegram Svc", price: 10, emoji: "✈️" },
+  ];
+  return (
+    <div className="w-full max-w-xl mx-auto">
+      <div className="flex items-center justify-center gap-2 mb-3">
+        <Tag className="h-4 w-4 text-primary" />
+        <p className="text-xs uppercase tracking-widest font-semibold text-primary">Presyong Pang-Masa 🇵🇭</p>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {deals.map((d) => (
+          <div key={d.name} className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 transition hover:border-primary/30">
+            <span className="text-lg">{d.emoji}</span>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-foreground truncate">{d.name}</p>
+              <p className="text-sm font-bold text-primary">₱{d.price.toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">(~${convert(d.price).toFixed(2)})</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-center text-[11px] text-muted-foreground">
+        Volume discounts up to <span className="text-primary font-semibold">17% off</span> — GCash & Maya accepted 🇵🇭
+      </p>
+    </div>
+  );
+}
+
 export default function Index() {
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
@@ -123,7 +159,7 @@ export default function Index() {
               WLBC Store
             </h1>
             <p className="mx-auto max-w-md text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Premium digital accounts & services. Fast delivery via Telegram. Trusted by thousands.
+              Premium digital accounts & services at <span className="text-primary font-semibold">unbeatable PHP prices</span>. Fast delivery via Telegram. Trusted by thousands of Pinoys.
             </p>
           </div>
 
@@ -133,6 +169,8 @@ export default function Index() {
           {/* Dice showcase */}
           <DiceRoller />
 
+          {/* PHP Pricing showcase */}
+          <PricingShowcase />
           <div className="flex flex-wrap justify-center gap-3 pt-2">
             <Link to="/products">
               <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 glow-sm px-8 text-sm font-semibold">
