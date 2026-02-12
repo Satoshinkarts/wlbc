@@ -16,9 +16,11 @@ import {
   Trash2, Loader2, Upload, TrendingUp, CalendarDays, Filter,
   DollarSign, BarChart3, Users, Eye, KeyRound, FileUp, Image,
   Minus, Download, StickyNote, ArchiveX, AlertTriangle,
+  CheckSquare, Square, X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -84,6 +86,11 @@ export default function OrdersPanel({ orders, setOrders, profiles, setProfiles }
   const [dateTo, setDateTo] = useState("");
   const [filterUser, setFilterUser] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState("");
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   // Order detail modal
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -175,6 +182,62 @@ export default function OrdersPanel({ orders, setOrders, profiles, setProfiles }
     a.click();
     URL.revokeObjectURL(url);
     toast.success("CSV exported!");
+  };
+
+  // Bulk selection helpers
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const selectAll = () => setSelectedIds(new Set(filteredOrders.map((o) => o.id)));
+  const deselectAll = () => setSelectedIds(new Set());
+  const selectedCount = selectedIds.size;
+
+  // Bulk status update
+  const bulkUpdateStatus = async (status: string) => {
+    if (selectedCount === 0) return;
+    setBulkUpdating(true);
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase.from("orders").update({ status }).in("id", ids);
+    if (error) { toast.error(error.message); setBulkUpdating(false); return; }
+    setOrders((prev) => prev.map((o) => ids.includes(o.id) ? { ...o, status } : o));
+    setSelectedIds(new Set());
+    setBulkUpdating(false);
+    toast.success(`${ids.length} orders → ${status}`);
+  };
+
+  // Bulk cancel
+  const bulkCancel = async () => {
+    await bulkUpdateStatus("cancelled");
+  };
+
+  // Bulk export selected
+  const bulkExportCSV = () => {
+    const selected = filteredOrders.filter((o) => selectedIds.has(o.id));
+    if (selected.length === 0) { toast.error("No orders selected"); return; }
+    const headers = ["Order ID", "Customer", "Status", "Total", "Remit", "Profit", "Telegram", "Date"];
+    const rows = selected.map(o => [
+      o.id.slice(0, 8),
+      getProfileName(o.user_id),
+      o.status,
+      Number(o.total).toFixed(2),
+      Number(o.remit || 0).toFixed(2),
+      (Number(o.total) - Number(o.remit || 0)).toFixed(2),
+      o.shipping_address || "",
+      new Date(o.created_at).toLocaleString(),
+    ]);
+    const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${c}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders-selected-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${selected.length} orders exported!`);
   };
 
   const updateOrderStatus = async (id: string, status: string) => {
@@ -388,12 +451,38 @@ export default function OrdersPanel({ orders, setOrders, profiles, setProfiles }
 
       {/* Order list */}
       <div className="space-y-2">
+        {/* Select all header */}
+        {filteredOrders.length > 0 && (
+          <div className="flex items-center gap-2 px-1">
+            <Checkbox
+              checked={selectedCount > 0 && selectedCount === filteredOrders.length}
+              onCheckedChange={(checked) => checked ? selectAll() : deselectAll()}
+              className="border-border"
+            />
+            <span className="text-xs text-muted-foreground">
+              {selectedCount > 0 ? `${selectedCount} selected` : "Select all"}
+            </span>
+            {selectedCount > 0 && selectedCount < filteredOrders.length && (
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] text-primary px-2" onClick={selectAll}>
+                Select all {filteredOrders.length}
+              </Button>
+            )}
+          </div>
+        )}
+
         {filteredOrders.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">No orders match filters.</p>
         ) : (
           filteredOrders.map((order) => (
-            <Card key={order.id} className="bg-card border-border p-3 animate-fade-in">
-              <div className="flex items-start justify-between gap-2">
+            <Card key={order.id} className={`bg-card border-border p-3 animate-fade-in transition-colors ${selectedIds.has(order.id) ? "ring-1 ring-primary/50 bg-primary/5" : ""}`}>
+              <div className="flex items-start gap-2">
+                <div className="pt-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedIds.has(order.id)}
+                    onCheckedChange={() => toggleSelect(order.id)}
+                    className="border-border"
+                  />
+                </div>
                 <div className="min-w-0 flex-1" onClick={() => viewReceipt(order)} role="button" tabIndex={0}>
                   <div className="flex items-center gap-2">
                     <p className="font-mono text-xs text-muted-foreground">#{order.id.slice(0, 8)}</p>
@@ -468,6 +557,44 @@ export default function OrdersPanel({ orders, setOrders, profiles, setProfiles }
           ))
         )}
       </div>
+
+      {/* ─── Bulk Action Floating Bar ─── */}
+      {selectedCount > 0 && (
+        <div className="fixed bottom-4 left-4 right-4 z-50 bg-card border border-border rounded-xl p-3 shadow-lg animate-fade-in">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-primary/20 text-primary text-xs">{selectedCount} selected</Badge>
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={deselectAll}>
+                <X className="mr-1 h-3 w-3" /> Clear
+              </Button>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Select value={bulkStatus} onValueChange={(v) => { setBulkStatus(v); bulkUpdateStatus(v); }}>
+                <SelectTrigger className="w-[120px] bg-secondary border-border text-foreground text-xs h-8">
+                  <SelectValue placeholder="Set status..." />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  {["pending", "confirmed", "processing", "shipped", "delivered"].map((s) => (
+                    <SelectItem key={s} value={s} className="text-foreground text-xs capitalize">{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" className="h-8 text-xs border-border text-muted-foreground" onClick={bulkExportCSV}>
+                <Download className="mr-1 h-3 w-3" /> Export
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs border-border text-destructive hover:bg-destructive/10" onClick={bulkCancel}>
+                <ArchiveX className="mr-1 h-3 w-3" /> Cancel All
+              </Button>
+            </div>
+          </div>
+          {bulkUpdating && (
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-xs text-muted-foreground">Updating...</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Order Detail / Receipt Modal ─── */}
       <Dialog open={!!selectedOrder && !minimized} onOpenChange={(open) => { if (!open) { setSelectedOrder(null); setReceiptUrl(null); setDeliveryFile(null); } }}>
