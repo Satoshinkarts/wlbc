@@ -404,7 +404,7 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="orders" className="mt-4">
-          <OrdersPanel orders={orders} setOrders={setOrders} profiles={profiles} />
+          <OrdersPanel orders={orders} setOrders={setOrders} profiles={profiles} setProfiles={setProfiles} />
         </TabsContent>
       </Tabs>
 

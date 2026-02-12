@@ -50,6 +50,7 @@ interface OrdersPanelProps {
   orders: Order[];
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   profiles: Profile[];
+  setProfiles: React.Dispatch<React.SetStateAction<Profile[]>>;
 }
 
 // Simple sparkline-like bar chart
@@ -78,7 +79,7 @@ function MiniChart({ data, label }: { data: { date: string; value: number }[]; l
   );
 }
 
-export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanelProps) {
+export default function OrdersPanel({ orders, setOrders, profiles, setProfiles }: OrdersPanelProps) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [filterUser, setFilterUser] = useState("all");
@@ -650,6 +651,7 @@ export default function OrdersPanel({ orders, setOrders, profiles }: OrdersPanel
                     const { error } = await supabase.from("profiles").update({ is_vip: checked }).eq("user_id", customerModal.user_id);
                     if (error) { toast.error(error.message); return; }
                     setCustomerModal({ ...customerModal, is_vip: checked });
+                    setProfiles((prev) => prev.map((p) => p.user_id === customerModal.user_id ? { ...p, is_vip: checked } : p));
                     toast.success(checked ? "VIP status granted!" : "VIP status removed");
                   }}
                 />
