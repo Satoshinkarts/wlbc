@@ -391,13 +391,19 @@ export type Database = {
       }
       validate_and_create_order:
         | {
-            Args: { _items: Json; _notes?: string; _shipping_address?: string }
+            Args: {
+              _items: Json
+              _notes?: string
+              _promo_code?: string
+              _shipping_address?: string
+            }
             Returns: string
           }
         | {
             Args: {
               _items: Json
               _notes?: string
+              _payment_proof_path?: string
               _promo_code?: string
               _shipping_address?: string
             }

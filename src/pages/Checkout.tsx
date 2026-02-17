@@ -205,24 +205,25 @@ export default function Checkout() {
     setShowConfirm(false);
     setLoading(true);
     try {
-      // Server-side validated order creation
+      // Upload proof BEFORE creating order to avoid post-creation update
+      let proofPath = "";
+      if (proofFile) {
+        const ext = proofFile.name.split(".").pop();
+        const tempId = crypto.randomUUID();
+        proofPath = `${user.id}/${tempId}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from("payment-proofs").upload(proofPath, proofFile);
+        if (uploadErr) throw uploadErr;
+      }
+
+      // Server-side validated order creation (includes proof path)
       const { data: orderId, error: orderErr } = await supabase.rpc("validate_and_create_order", {
         _items: items.map((i) => ({ product_id: i.id, quantity: i.quantity })),
         _shipping_address: address,
         _notes: notes,
         _promo_code: promoApplied?.code || null,
+        _payment_proof_path: proofPath || null,
       });
       if (orderErr) throw orderErr;
-
-      let proofPath = "";
-      if (proofFile) {
-        const ext = proofFile.name.split(".").pop();
-        proofPath = `${user.id}/${orderId}.${ext}`;
-        const { error: uploadErr } = await supabase.storage.from("payment-proofs").upload(proofPath, proofFile);
-        if (uploadErr) throw uploadErr;
-        // Save proof path to order
-        await supabase.from("orders").update({ payment_proof_path: proofPath }).eq("id", orderId);
-      }
 
       try {
         await supabase.functions.invoke("notify-order", {
