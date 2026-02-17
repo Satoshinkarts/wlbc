@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode, Wallet, Copy, ShieldCheck, RefreshCw } from "lucide-react";
+import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode, Wallet, Copy, ShieldCheck, RefreshCw, Tag, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -133,6 +133,10 @@ export default function Checkout() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("qr_ph");
   const [expired, setExpired] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoApplied, setPromoApplied] = useState<{ code: string; discount_type: string; discount_value: number } | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -152,6 +156,44 @@ export default function Checkout() {
 
   if (!user || items.length === 0) return null;
 
+  const applyPromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    setPromoError("");
+    try {
+      const { data, error } = await supabase
+        .from("promo_codes")
+        .select("code, discount_type, discount_value, usage_limit, usage_count, expires_at, is_active, min_order_total")
+        .ilike("code", promoCode.trim())
+        .single();
+      if (error || !data) throw new Error("Invalid promo code");
+      if (!data.is_active) throw new Error("This code is no longer active");
+      if (data.expires_at && new Date(data.expires_at) < new Date()) throw new Error("This code has expired");
+      if (data.usage_limit !== null && data.usage_count >= data.usage_limit) throw new Error("This code has reached its usage limit");
+      if (total < Number(data.min_order_total)) throw new Error(`Minimum order of ₱${Number(data.min_order_total).toFixed(2)} required`);
+      setPromoApplied({ code: data.code, discount_type: data.discount_type, discount_value: Number(data.discount_value) });
+      toast.success(`Promo code "${data.code}" applied!`);
+    } catch (err: any) {
+      setPromoError(err.message);
+      setPromoApplied(null);
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const removePromo = () => {
+    setPromoApplied(null);
+    setPromoCode("");
+    setPromoError("");
+  };
+
+  const promoDiscount = promoApplied
+    ? promoApplied.discount_type === "percentage"
+      ? total * (promoApplied.discount_value / 100)
+      : Math.min(promoApplied.discount_value, total)
+    : 0;
+  const finalTotal = total - promoDiscount;
+
   const placeOrder = () => {
     if (!address.trim()) { toast.error("Please enter your Telegram username"); return; }
     if (!proofFile) { toast.error("Payment proof is required. Please upload your proof of payment."); return; }
@@ -168,6 +210,7 @@ export default function Checkout() {
         _items: items.map((i) => ({ product_id: i.id, quantity: i.quantity })),
         _shipping_address: address,
         _notes: notes,
+        _promo_code: promoApplied?.code || null,
       });
       if (orderErr) throw orderErr;
 
@@ -246,13 +289,19 @@ export default function Checkout() {
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-sm text-success">
-                  <span>Discount ({(discountPct * 100).toFixed(0)}% off)</span>
+                  <span>Volume Discount ({(discountPct * 100).toFixed(0)}% off)</span>
                   <span>-₱{discount.toFixed(2)} (~-${convert(discount).toFixed(2)})</span>
+                </div>
+              )}
+              {promoDiscount > 0 && (
+                <div className="flex justify-between text-sm text-success">
+                  <span>Promo "{promoApplied?.code}" {promoApplied?.discount_type === "percentage" ? `(${promoApplied.discount_value}%)` : ""}</span>
+                  <span>-₱{promoDiscount.toFixed(2)} (~-${convert(promoDiscount).toFixed(2)})</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-foreground">
                 <span>Total</span>
-                <span className="text-primary">₱{total.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">(~${convert(total).toFixed(2)})</span></span>
+                <span className="text-primary">₱{finalTotal.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">(~${convert(finalTotal).toFixed(2)})</span></span>
               </div>
             </div>
           </CardContent>
@@ -342,13 +391,57 @@ export default function Checkout() {
           </CardContent>
         </Card>
 
+        {/* Promo Code */}
+        <Card className="bg-card border-border">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Tag className="h-4 w-4 text-primary" />
+              Promo Code
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {promoApplied ? (
+              <div className="flex items-center justify-between rounded-lg bg-success/10 border border-success/30 p-3">
+                <div>
+                  <span className="font-mono font-bold text-sm text-success">{promoApplied.code}</span>
+                  <span className="ml-2 text-xs text-success">
+                    {promoApplied.discount_type === "percentage" ? `${promoApplied.discount_value}% off` : `₱${promoApplied.discount_value} off`}
+                  </span>
+                </div>
+                <button onClick={removePromo} className="text-muted-foreground hover:text-destructive transition-colors">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  value={promoCode}
+                  onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(""); }}
+                  placeholder="Enter code"
+                  className="bg-secondary border-border text-foreground text-sm font-mono flex-1"
+                />
+                <Button
+                  type="button"
+                  onClick={applyPromo}
+                  disabled={promoLoading || !promoCode.trim()}
+                  variant="outline"
+                  className="border-border text-foreground shrink-0"
+                >
+                  {promoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                </Button>
+              </div>
+            )}
+            {promoError && <p className="mt-1.5 text-xs text-destructive">{promoError}</p>}
+          </CardContent>
+        </Card>
+
         <Button
           onClick={placeOrder}
           disabled={loading || expired}
           className="w-full bg-primary text-primary-foreground hover:bg-primary/90 glow-sm py-5 text-base"
         >
           {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle className="mr-2 h-5 w-5" />}
-          {expired ? "Payment Expired" : `Place Order — ₱${total.toFixed(2)} (~$${convert(total).toFixed(2)})`}
+          {expired ? "Payment Expired" : `Place Order — ₱${finalTotal.toFixed(2)} (~$${convert(finalTotal).toFixed(2)})`}
         </Button>
       </div>
 
@@ -360,7 +453,7 @@ export default function Checkout() {
               Confirm Your Order
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground text-sm">
-              Your order of <strong className="text-foreground">₱{total.toFixed(2)} (~${convert(total).toFixed(2)})</strong> will be submitted for processing. Are you sure?
+              Your order of <strong className="text-foreground">₱{finalTotal.toFixed(2)} (~${convert(finalTotal).toFixed(2)})</strong> will be submitted for processing. Are you sure?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-row">

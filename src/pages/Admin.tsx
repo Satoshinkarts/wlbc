@@ -16,9 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Trash2, Loader2, Upload, Package, ShoppingCart, Pencil, Tag, BarChart3 } from "lucide-react";
+import { Plus, Trash2, Loader2, Upload, Package, ShoppingCart, Pencil, Tag, BarChart3, Ticket } from "lucide-react";
 import OrdersPanel from "@/components/admin/OrdersPanel";
 import CustomerAnalytics from "@/components/admin/CustomerAnalytics";
+import PromoCodesPanel from "@/components/admin/PromoCodesPanel";
 
 interface Product {
   id: string;
@@ -367,6 +368,9 @@ export default function Admin() {
           <TabsTrigger value="orders" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
             <ShoppingCart className="mr-1.5 h-4 w-4" />Orders
           </TabsTrigger>
+          <TabsTrigger value="promos" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
+            <Ticket className="mr-1.5 h-4 w-4" />Promos
+          </TabsTrigger>
           <TabsTrigger value="analytics" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
             <BarChart3 className="mr-1.5 h-4 w-4" />Analytics
           </TabsTrigger>
@@ -409,6 +413,10 @@ export default function Admin() {
 
         <TabsContent value="orders" className="mt-4">
           <OrdersPanel orders={orders} setOrders={setOrders} profiles={profiles} setProfiles={setProfiles} />
+        </TabsContent>
+
+        <TabsContent value="promos" className="mt-4">
+          <PromoCodesPanel />
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-4">
