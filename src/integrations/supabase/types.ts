@@ -94,6 +94,8 @@ export type Database = {
           id: string
           notes: string | null
           payment_proof_path: string | null
+          promo_code_id: string | null
+          promo_discount: number
           remit: number
           shipping_address: string | null
           status: string
@@ -108,6 +110,8 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_proof_path?: string | null
+          promo_code_id?: string | null
+          promo_discount?: number
           remit?: number
           shipping_address?: string | null
           status?: string
@@ -122,6 +126,8 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_proof_path?: string | null
+          promo_code_id?: string | null
+          promo_discount?: number
           remit?: number
           shipping_address?: string | null
           status?: string
@@ -129,7 +135,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       password_reset_log: {
         Row: {
@@ -278,6 +292,48 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          min_order_total: number
+          updated_at: string
+          usage_count: number
+          usage_limit: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          min_order_total?: number
+          updated_at?: string
+          usage_count?: number
+          usage_limit?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          min_order_total?: number
+          updated_at?: string
+          usage_count?: number
+          usage_limit?: number | null
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           created_at: string
@@ -333,10 +389,20 @@ export type Database = {
         }
         Returns: boolean
       }
-      validate_and_create_order: {
-        Args: { _items: Json; _notes?: string; _shipping_address?: string }
-        Returns: string
-      }
+      validate_and_create_order:
+        | {
+            Args: { _items: Json; _notes?: string; _shipping_address?: string }
+            Returns: string
+          }
+        | {
+            Args: {
+              _items: Json
+              _notes?: string
+              _promo_code?: string
+              _shipping_address?: string
+            }
+            Returns: string
+          }
     }
     Enums: {
       app_role: "admin" | "user"
