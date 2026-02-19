@@ -220,13 +220,16 @@ export default function Checkout() {
 
       // Step 2: Create order
       setOrderStep(2);
-      const { data: orderId, error: orderErr } = await supabase.rpc("validate_and_create_order", {
+      const rpcParams: Record<string, unknown> = {
         _items: items.map((i) => ({ product_id: i.id, quantity: i.quantity })),
         _shipping_address: address,
         _notes: notes,
-        _promo_code: promoApplied?.code || null,
         _payment_proof_path: proofPath || null,
-      });
+      };
+      if (promoApplied?.code) {
+        rpcParams._promo_code = promoApplied.code;
+      }
+      const { data: orderId, error: orderErr } = await supabase.rpc("validate_and_create_order", rpcParams as any);
       if (orderErr) throw orderErr;
 
       // Step 3: Send notification

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { getDiscountedTotal } from "@/lib/pricing";
+import { getDiscount } from "@/lib/pricing";
 
 export interface CartItem {
   id: string;
@@ -24,6 +24,8 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const PVA_GMAIL_NAME = "PVA - Gmail";
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
@@ -47,23 +49,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = () => setItems([]);
 
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-  const rawSubtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const { subtotal, discount, discountPct, total } = getDiscountedTotal(
-    items.length > 0 ? items[0].price : 0,
-    itemCount
-  );
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-  // Use raw subtotal if multiple products with different prices
-  const finalSubtotal = rawSubtotal;
-  const finalDiscount = finalSubtotal * discountPct;
-  const finalTotal = finalSubtotal - finalDiscount;
+  // Volume discount only applies to PVA - Gmail items
+  const pvaUnits = items
+    .filter((i) => i.name === PVA_GMAIL_NAME)
+    .reduce((sum, i) => sum + i.quantity, 0);
+  const pvaSubtotal = items
+    .filter((i) => i.name === PVA_GMAIL_NAME)
+    .reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+  const discountPct = getDiscount(pvaUnits);
+  const discount = pvaSubtotal * discountPct;
+  const total = subtotal - discount;
 
   return (
     <CartContext.Provider value={{
       items, addItem, removeItem, updateQuantity, clearCart,
-      total: finalTotal,
-      subtotal: finalSubtotal,
-      discount: finalDiscount,
+      total,
+      subtotal,
+      discount,
       discountPct,
       itemCount,
     }}>
