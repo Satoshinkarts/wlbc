@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode, Wallet, Copy, ShieldCheck, RefreshCw, Tag, X } from "lucide-react";
+import { Loader2, Upload, CheckCircle, AlertTriangle, Clock, QrCode, Wallet, Copy, ShieldCheck, RefreshCw, Tag, X, ShieldAlert } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -130,6 +131,7 @@ export default function Checkout() {
   const [notes, setNotes] = useState("");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [orderStep, setOrderStep] = useState(0); // 0=idle, 1=uploading, 2=creating, 3=notifying, 4=done
   const [showConfirm, setShowConfirm] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("qr_ph");
   const [expired, setExpired] = useState(false);
@@ -204,8 +206,9 @@ export default function Checkout() {
   const confirmOrder = async () => {
     setShowConfirm(false);
     setLoading(true);
+    setOrderStep(1);
     try {
-      // Upload proof BEFORE creating order to avoid post-creation update
+      // Step 1: Upload proof
       let proofPath = "";
       if (proofFile) {
         const ext = proofFile.name.split(".").pop();
@@ -215,7 +218,8 @@ export default function Checkout() {
         if (uploadErr) throw uploadErr;
       }
 
-      // Server-side validated order creation (includes proof path)
+      // Step 2: Create order
+      setOrderStep(2);
       const { data: orderId, error: orderErr } = await supabase.rpc("validate_and_create_order", {
         _items: items.map((i) => ({ product_id: i.id, quantity: i.quantity })),
         _shipping_address: address,
@@ -225,6 +229,8 @@ export default function Checkout() {
       });
       if (orderErr) throw orderErr;
 
+      // Step 3: Send notification
+      setOrderStep(3);
       try {
         await supabase.functions.invoke("notify-order", {
           body: {
@@ -238,6 +244,8 @@ export default function Checkout() {
         });
       } catch { /* non-blocking */ }
 
+      // Step 4: Done
+      setOrderStep(4);
       clearCart();
       toast.success("Order placed successfully!");
       navigate("/orders");
@@ -245,11 +253,35 @@ export default function Checkout() {
       toast.error(err.message || "Failed to place order");
     } finally {
       setLoading(false);
+      setOrderStep(0);
     }
   };
 
+  const ORDER_STEPS = [
+    { label: "Uploading payment proof…", pct: 20 },
+    { label: "Creating your order…", pct: 50 },
+    { label: "Sending notification…", pct: 80 },
+    { label: "Order placed!", pct: 100 },
+  ];
+
   return (
-    <div className="mx-auto max-w-lg px-4 py-6">
+    <div className="mx-auto max-w-lg px-4 py-6 relative">
+      {/* Processing overlay */}
+      {loading && orderStep > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <Card className="w-80 bg-card border-border p-6 text-center shadow-2xl">
+            <ShieldAlert className="mx-auto h-10 w-10 text-primary mb-3 animate-pulse" />
+            <h3 className="text-lg font-bold text-foreground mb-1">Processing Order</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Please don't close or leave this page.
+            </p>
+            <Progress value={ORDER_STEPS[orderStep - 1]?.pct ?? 0} className="h-2 mb-3" />
+            <p className="text-sm font-medium text-primary animate-pulse">
+              {ORDER_STEPS[orderStep - 1]?.label}
+            </p>
+          </Card>
+        </div>
+      )}
       <h1 className="mb-4 text-2xl font-bold text-foreground">Checkout</h1>
       {rate && (
         <div className="mb-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
