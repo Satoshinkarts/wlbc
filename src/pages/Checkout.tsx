@@ -229,7 +229,7 @@ export default function Checkout() {
         await supabase.functions.invoke("notify-order", {
           body: {
             orderId,
-            total,
+            total: finalTotal,
             items: items.length,
             telegram: address,
             proofPath,
