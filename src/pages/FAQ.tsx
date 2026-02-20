@@ -29,7 +29,7 @@ const faqs = [
   },
   {
     q: "What are volume discounts?",
-    a: "Buy more, save more: 100+ units = 10% off, 200+ units = 15% off, 300+ units = 17% off. Discounts apply automatically at checkout.",
+    a: "Volume discounts apply exclusively to PVA - Gmail products. Buy more, save more: 100+ units = 10% off, 200+ units = 15% off, 300+ units = 17% off. Discounts apply automatically at checkout.",
   },
   {
     q: "How does the referral program work?",
