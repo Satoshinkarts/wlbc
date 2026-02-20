@@ -20,6 +20,7 @@ interface CartContextType {
   discount: number;
   discountPct: number;
   itemCount: number;
+  pvaUnits: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -71,6 +72,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       discount,
       discountPct,
       itemCount,
+      pvaUnits,
     }}>
       {children}
     </CartContext.Provider>

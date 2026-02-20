@@ -8,7 +8,7 @@ import { usePhpToUsd } from "@/hooks/use-forex";
 import { RefreshCw } from "lucide-react";
 
 export default function Cart() {
-  const { items, removeItem, updateQuantity, total, subtotal, discount, discountPct, itemCount } = useCart();
+  const { items, removeItem, updateQuantity, total, subtotal, discount, discountPct, itemCount, pvaUnits } = useCart();
   const { convert, rate, apiUpdated } = usePhpToUsd();
 
   if (items.length === 0) {
@@ -82,27 +82,29 @@ export default function Cart() {
         ))}
       </div>
 
-      {/* Volume discount info */}
-      <Card className="mt-4 bg-card border-border p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Tag className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold text-foreground">Volume Pricing</span>
-        </div>
-        <div className="grid grid-cols-2 gap-1">
-          {PRICING_TIERS.slice().reverse().map((tier) => (
-            <span
-              key={tier.minQty}
-              className={`text-[11px] px-2 py-1 rounded ${
-                itemCount >= tier.minQty && discountPct === tier.discount
-                  ? "bg-primary/20 text-primary font-semibold"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {tier.label}
-            </span>
-          ))}
-        </div>
-      </Card>
+      {/* Volume discount info - only show when PVA - Gmail items exist */}
+      {pvaUnits > 0 && (
+        <Card className="mt-4 bg-card border-border p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Tag className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">Volume Pricing (PVA - Gmail only)</span>
+          </div>
+          <div className="grid grid-cols-2 gap-1">
+            {PRICING_TIERS.slice().reverse().map((tier) => (
+              <span
+                key={tier.minQty}
+                className={`text-[11px] px-2 py-1 rounded ${
+                  pvaUnits >= tier.minQty && discountPct === tier.discount
+                    ? "bg-primary/20 text-primary font-semibold"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {tier.label}
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card className="mt-3 bg-card border-border p-4">
         <div className="space-y-1.5">
