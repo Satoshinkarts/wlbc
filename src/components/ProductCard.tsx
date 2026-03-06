@@ -35,7 +35,10 @@ export default function ProductCard({ id, name, description, price, image_url, s
   const isFeatured = name.includes("PVA - Gmail");
 
   return (
-    <Card className={`group overflow-hidden bg-card border-border transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_25px_hsl(var(--primary)/0.1)] hover:-translate-y-0.5 animate-fade-in ${isFeatured ? "ring-2 ring-primary/50 border-primary/40 shadow-[0_0_15px_hsl(var(--primary)/0.2)]" : ""}`}>
+    <Card
+      className={`group overflow-hidden bg-card border-border transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_25px_hsl(var(--primary)/0.1)] hover:-translate-y-0.5 animate-fade-in cursor-pointer ${isFeatured ? "ring-2 ring-primary/50 border-primary/40 shadow-[0_0_15px_hsl(var(--primary)/0.2)]" : ""}`}
+      onClick={() => navigate(`/products/${id}`)}
+    >
       <div className="relative aspect-square overflow-hidden bg-secondary">
         {/* Badges */}
         <div className="absolute top-1.5 left-1.5 z-10 flex flex-col gap-1">
@@ -75,7 +78,7 @@ export default function ProductCard({ id, name, description, price, image_url, s
               </span>
             )}
           </div>
-          <Button size="sm" onClick={handleAdd} disabled={!inStock} className="bg-primary text-primary-foreground hover:bg-primary/90 h-7 px-2 text-xs">
+          <Button size="sm" onClick={(e) => { e.stopPropagation(); handleAdd(); }} disabled={!inStock} className="bg-primary text-primary-foreground hover:bg-primary/90 h-7 px-2 text-xs">
             <ShoppingCart className="mr-1 h-3 w-3" />
             {inStock ? "Add" : "Out"}
           </Button>

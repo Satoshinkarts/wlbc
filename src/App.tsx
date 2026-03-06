@@ -9,6 +9,7 @@ import Navbar from "@/components/Navbar";
 import FakePurchasePopup from "@/components/FakePurchasePopup";
 import Auth from "./pages/Auth";
 import Products from "./pages/Products";
+import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
