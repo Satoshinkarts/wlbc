@@ -126,8 +126,8 @@ serve(async (req) => {
           } else {
             console.error("Failed to download proof:", dlErr?.message);
           }
-        } catch (e) {
-          console.error("Error downloading/sending proof:", e.message);
+      } catch (e: unknown) {
+          console.error("Error downloading/sending proof:", (e as Error).message);
         }
       }
 
