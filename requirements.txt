@@ -1,0 +1,7 @@
+requests>=2.0
+requests-mock>=1.9
+pytest>=7.0
+selenium>=4.0
+webdriver-manager>=3.0
+faker>=18.0
+pandas>=1.5
