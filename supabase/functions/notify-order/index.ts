@@ -160,8 +160,8 @@ serve(async (req) => {
           }
         );
         console.log("Forward message sent");
-      } catch (e) {
-        console.error("Forward msg error:", e.message);
+      } catch (e: unknown) {
+        console.error("Forward msg error:", (e as Error).message);
       }
     } else {
       console.log("Telegram not configured");
