@@ -21,32 +21,35 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <CartProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Navbar />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/products/:id" element={<ProductDetail />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <FakePurchasePopup />
-        </BrowserRouter>
-      </CartProvider>
-    </AuthProvider>
+const App = () => ( <QueryClientProvider client={queryClient}> <AuthProvider> <CartProvider> <Toaster /> <Sonner />
+
+```
+    {/* Automatic base path for GitHub Pages */}
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <Navbar />
+
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/products/:id" element={<ProductDetail />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/faq" element={<FAQ />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+
+      <FakePurchasePopup />
+    </BrowserRouter>
+
+  </CartProvider>
+</AuthProvider>
+```
+
   </QueryClientProvider>
 );
 
