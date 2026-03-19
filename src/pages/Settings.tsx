@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Loader2, KeyRound, User, Save, Send } from "lucide-react";
+import { Loader2, KeyRound, User, Save, Send, Power } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 export default function Settings() {
   const { user, loading: authLoading } = useAuth();
