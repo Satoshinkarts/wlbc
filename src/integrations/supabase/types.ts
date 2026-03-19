@@ -358,6 +358,27 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          id: string
+          is_shutdown: boolean
+          shutdown_message: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          is_shutdown?: boolean
+          shutdown_message?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          is_shutdown?: boolean
+          shutdown_message?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

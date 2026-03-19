@@ -7,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Loader2, KeyRound, User, Save, Send } from "lucide-react";
+import { Loader2, KeyRound, User, Save, Send, Power } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 export default function Settings() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState({ full_name: "", phone: "", address: "", telegram_chat_id: "", is_vip: false });
@@ -22,6 +23,11 @@ export default function Settings() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPw, setChangingPw] = useState(false);
+
+  const [siteShutdown, setSiteShutdown] = useState(false);
+  const [shutdownMessage, setShutdownMessage] = useState("");
+  const [shutdownLoading, setShutdownLoading] = useState(true);
+  const [savingShutdown, setSavingShutdown] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -50,6 +56,27 @@ export default function Settings() {
     };
     fetchProfile();
   }, [user]);
+
+  // Fetch shutdown settings (admin only)
+  useEffect(() => {
+    if (!isAdmin) {
+      setShutdownLoading(false);
+      return;
+    }
+    const fetchShutdown = async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("is_shutdown, shutdown_message")
+        .eq("id", "00000000-0000-0000-0000-000000000001")
+        .maybeSingle();
+      if (data) {
+        setSiteShutdown(data.is_shutdown);
+        setShutdownMessage(data.shutdown_message || "");
+      }
+      setShutdownLoading(false);
+    };
+    fetchShutdown();
+  }, [isAdmin]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +126,23 @@ export default function Settings() {
       toast.error(err.message);
     } finally {
       setChangingPw(false);
+    }
+  };
+
+  const handleToggleShutdown = async (checked: boolean) => {
+    setSavingShutdown(true);
+    try {
+      const { error } = await supabase
+        .from("site_settings")
+        .update({ is_shutdown: checked, shutdown_message: shutdownMessage.trim() || "This site is currently under maintenance.", updated_at: new Date().toISOString() })
+        .eq("id", "00000000-0000-0000-0000-000000000001");
+      if (error) throw error;
+      setSiteShutdown(checked);
+      toast.success(checked ? "Site is now shut down" : "Site is back online");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSavingShutdown(false);
     }
   };
 
@@ -186,6 +230,49 @@ export default function Settings() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Site Shutdown — Admin Only */}
+      {isAdmin && (
+        <Card className="bg-card border-destructive/30">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
+              <Power className="h-4 w-4 text-destructive" /> Site Shutdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground">Shut down website</p>
+                <p className="text-[10px] text-muted-foreground">Non-admin users will see a maintenance page</p>
+              </div>
+              <Switch
+                checked={siteShutdown}
+                onCheckedChange={handleToggleShutdown}
+                disabled={savingShutdown || shutdownLoading}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-foreground text-sm">Shutdown Message</Label>
+              <Input
+                value={shutdownMessage}
+                onChange={(e) => setShutdownMessage(e.target.value)}
+                placeholder="Maintenance message..."
+                className="bg-secondary border-border text-foreground text-sm"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={savingShutdown}
+                onClick={() => handleToggleShutdown(siteShutdown)}
+                className="text-xs"
+              >
+                {savingShutdown ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />}
+                Save Message
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
