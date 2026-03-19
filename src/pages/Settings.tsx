@@ -24,6 +24,11 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPw, setChangingPw] = useState(false);
 
+  const [siteShutdown, setSiteShutdown] = useState(false);
+  const [shutdownMessage, setShutdownMessage] = useState("");
+  const [shutdownLoading, setShutdownLoading] = useState(true);
+  const [savingShutdown, setSavingShutdown] = useState(false);
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
