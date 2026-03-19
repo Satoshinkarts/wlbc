@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 
 export default function Settings() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState({ full_name: "", phone: "", address: "", telegram_chat_id: "", is_vip: false });
