@@ -230,6 +230,49 @@ export default function Settings() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Site Shutdown — Admin Only */}
+      {isAdmin && (
+        <Card className="bg-card border-destructive/30">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
+              <Power className="h-4 w-4 text-destructive" /> Site Shutdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-foreground">Shut down website</p>
+                <p className="text-[10px] text-muted-foreground">Non-admin users will see a maintenance page</p>
+              </div>
+              <Switch
+                checked={siteShutdown}
+                onCheckedChange={handleToggleShutdown}
+                disabled={savingShutdown || shutdownLoading}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-foreground text-sm">Shutdown Message</Label>
+              <Input
+                value={shutdownMessage}
+                onChange={(e) => setShutdownMessage(e.target.value)}
+                placeholder="Maintenance message..."
+                className="bg-secondary border-border text-foreground text-sm"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={savingShutdown}
+                onClick={() => handleToggleShutdown(siteShutdown)}
+                className="text-xs"
+              >
+                {savingShutdown ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />}
+                Save Message
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
