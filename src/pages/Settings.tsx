@@ -129,6 +129,23 @@ export default function Settings() {
     }
   };
 
+  const handleToggleShutdown = async (checked: boolean) => {
+    setSavingShutdown(true);
+    try {
+      const { error } = await supabase
+        .from("site_settings")
+        .update({ is_shutdown: checked, shutdown_message: shutdownMessage.trim() || "This site is currently under maintenance.", updated_at: new Date().toISOString() })
+        .eq("id", "00000000-0000-0000-0000-000000000001");
+      if (error) throw error;
+      setSiteShutdown(checked);
+      toast.success(checked ? "Site is now shut down" : "Site is back online");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSavingShutdown(false);
+    }
+  };
+
   if (authLoading || profileLoading) {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
