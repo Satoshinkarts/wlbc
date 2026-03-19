@@ -57,6 +57,27 @@ export default function Settings() {
     fetchProfile();
   }, [user]);
 
+  // Fetch shutdown settings (admin only)
+  useEffect(() => {
+    if (!isAdmin) {
+      setShutdownLoading(false);
+      return;
+    }
+    const fetchShutdown = async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("is_shutdown, shutdown_message")
+        .eq("id", "00000000-0000-0000-0000-000000000001")
+        .maybeSingle();
+      if (data) {
+        setSiteShutdown(data.is_shutdown);
+        setShutdownMessage(data.shutdown_message || "");
+      }
+      setShutdownLoading(false);
+    };
+    fetchShutdown();
+  }, [isAdmin]);
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
