@@ -344,8 +344,19 @@ export default function Admin() {
   };
 
   const deleteProduct = async (id: string) => {
+    // Try hard delete first; if FK constraint fails, soft-delete (deactivate) instead
     const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      if (error.message.includes("foreign key constraint")) {
+        const { error: softErr } = await supabase.from("products").update({ is_active: false }).eq("id", id);
+        if (softErr) { toast.error(softErr.message); return; }
+        setProducts((prev) => prev.map((p) => p.id === id ? { ...p, is_active: false } : p));
+        toast.success("Product has orders — hidden instead of deleted");
+        return;
+      }
+      toast.error(error.message);
+      return;
+    }
     setProducts((prev) => prev.filter((p) => p.id !== id));
     toast.success("Product deleted");
   };
