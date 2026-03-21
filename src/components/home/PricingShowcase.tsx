@@ -2,12 +2,12 @@ import { Tag } from "lucide-react";
 import { usePhpToUsd } from "@/hooks/use-forex";
 
 const DEALS = [
-  { name: "Gmail PVA", price: 30, original: 45, emoji: "📧" },
-  { name: "Facebook Acct", price: 90, original: 135, emoji: "👤" },
-  { name: "Instagram Acct", price: 90, original: 135, emoji: "📸" },
-  { name: "Twitter / X", price: 90, original: 135, emoji: "🐦" },
-  { name: "Outlook PVA", price: 30, original: 45, emoji: "📨" },
-  { name: "Telegram Svc", price: 90, original: 135, emoji: "✈️" },
+  { name: "Gmail PVA", price: 10, original: 15, emoji: "📧" },
+  { name: "Facebook Acct", price: 40, original: 60, emoji: "👤" },
+  { name: "Instagram Acct", price: 12, original: 20, emoji: "📸" },
+  { name: "Twitter / X", price: 150, original: 225, emoji: "🐦" },
+  { name: "Outlook PVA", price: 5, original: 10, emoji: "📨" },
+  { name: "Telegram Svc", price: 50, original: 75, emoji: "✈️" },
 ];
 
 export default function PricingShowcase() {
