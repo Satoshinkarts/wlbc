@@ -3,11 +3,11 @@ import { usePhpToUsd } from "@/hooks/use-forex";
 
 const DEALS = [
   { name: "Gmail PVA", price: 10, original: 15, emoji: "📧" },
-  { name: "Facebook Acct", price: 10, original: 15, emoji: "👤" },
-  { name: "Instagram Acct", price: 10, original: 15, emoji: "📸" },
-  { name: "Twitter / X", price: 10, original: 15, emoji: "🐦" },
+  { name: "Facebook Acct", price: 30, original: 45, emoji: "👤" },
+  { name: "Instagram Acct", price: 30, original: 45, emoji: "📸" },
+  { name: "Twitter / X", price: 30, original: 45, emoji: "🐦" },
   { name: "Outlook PVA", price: 10, original: 15, emoji: "📨" },
-  { name: "Telegram Svc", price: 10, original: 15, emoji: "✈️" },
+  { name: "Telegram Svc", price: 30, original: 45, emoji: "✈️" },
 ];
 
 export default function PricingShowcase() {
